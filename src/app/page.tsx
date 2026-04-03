@@ -140,7 +140,8 @@ type ConnectionStatus = "idle" | "loading" | "success" | "error";
 /* ------------------------------------------------------------------ */
 
 function syntaxHighlight(json: string): string {
-  return json.replace(
+  const sanitizedJson = json.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return sanitizedJson.replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
     (match) => {
       let cls = "json-number";

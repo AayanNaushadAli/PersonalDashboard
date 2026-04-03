@@ -306,7 +306,7 @@ export default function DeltaDashboard() {
   const [netPnl, setNetPnl] = useState(0);
 
   const [autoPoll, setAutoPoll] = useState(false);
-  const lastTradeRef = useRef<string | null>(null);
+  const lastTradeRef = useRef<number | null>(null);
 
   /* ---------------------------------------------------------------- */
   /* Test Connection & Refresh                                         */

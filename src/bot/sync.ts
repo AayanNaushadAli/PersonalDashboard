@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 import crypto from "crypto";
+// Import supabase after dotenv.config()
 import { supabaseAdmin } from "../lib/supabase";
 
 const BASE_URL = "https://api.india.delta.exchange";

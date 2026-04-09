@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -298,7 +298,7 @@ function parseDeltaTimestamp(ts: string): Date {
 
 function formatDate(ts: string): string {
   const d = parseDeltaTimestamp(ts);
-  if (isNaN(d.getTime())) return "â€”";
+  if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -311,7 +311,7 @@ function formatDate(ts: string): string {
 
 function formatDateShort(ts: string): string {
   const d = parseDeltaTimestamp(ts);
-  if (isNaN(d.getTime())) return "â€”";
+  if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",

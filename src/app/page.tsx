@@ -32,6 +32,7 @@ import {
   BellRing,
   BellOff,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import {
   AreaChart,
   Area,
@@ -188,6 +189,38 @@ async function callDelta(
   endpoint: string,
   queryParams?: string
 ): Promise<ApiResponse> {
+  const useSupabase = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
+
+  if (useSupabase) {
+    try {
+      const { data, error } = await supabase
+        .from("delta_sync")
+        .select("data, updated_at")
+        .eq("endpoint", endpoint)
+        .single();
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        endpoint,
+        status: 200,
+        data: { success: true, result: data?.data?.result || data?.data, meta: data?.data?.meta },
+      };
+    } catch (err: any) {
+      console.error(`Supabase fetch error for ${endpoint}:`, err);
+      // Fallback to local if Supabase fails? 
+      // For now, return error as Vercel IP will fail anyway if proxying.
+      return {
+        success: false,
+        endpoint,
+        status: 500,
+        data: null,
+        error: `Supabase Error: ${err.message}`,
+      };
+    }
+  }
+
   const res = await fetch("/api/delta", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

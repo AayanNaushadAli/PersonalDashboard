@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "bot": "tsx src/bot/main.ts"
+    "bot": "tsx src/bot/main.ts",
+    "sync": "tsx src/bot/sync.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
     "dotenv": "^17.4.0",
     "groq-sdk": "^1.1.2",
     "lucide-react": "^1.7.0",

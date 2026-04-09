@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { RSI } from "technicalindicators";
 
 export interface Candle {

@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import crypto from "crypto";
 
 const BASE_URL = "https://api.india.delta.exchange";

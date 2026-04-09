@@ -175,7 +175,7 @@ function ChartTooltip({ active, payload, label }: any) {
           ${usd.toFixed(2)}
         </p>
         <p className="text-xs text-[var(--text-muted)]">
-          â‚¹{(usd * USD_TO_INR).toFixed(0)}
+          ₹{(usd * USD_TO_INR).toFixed(0)}
         </p>
       </div>
     );
@@ -327,7 +327,7 @@ function fmtUsd(v: number): string {
 }
 
 function fmtInr(v: number): string {
-  return `â‚¹${v.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1581,9 +1581,9 @@ export default function DeltaDashboard() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-[var(--divider)]/30">
-                        {["Date", "Asset", "Side", "Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (â‚¹)"].map((h) => (
+                        {["Date", "Asset", "Side", "Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (₹)"].map((h) => (
                           <th key={h} className={`px-4 py-3 text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap ${
-                            ["Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (â‚¹)"].includes(h) ? "text-right" : ""
+                            ["Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (₹)"].includes(h) ? "text-right" : ""
                           }`}>{h}</th>
                         ))}
                       </tr>

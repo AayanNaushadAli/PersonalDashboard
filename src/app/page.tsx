@@ -1232,8 +1232,8 @@ export default function DeltaDashboard() {
               </div>
               <p className="text-[10px] text-[var(--text-faint)] mb-6">Last 93 days performance (weekends marked with a dot)</p>
               
-              <div className="overflow-visible pb-2 flex items-center justify-center">
-                <div className="flex gap-1 min-w-max">
+              <div className="w-full overflow-x-auto pb-4 pt-2 scrollbar-thin scrollbar-thumb-[var(--text-accent)]/20 scrollbar-track-transparent">
+                <div className="flex gap-1.5 min-w-max px-2 justify-start md:justify-center">
                   {Array.from({ length: Math.ceil(heatmapData.length / 7) }).map((_, colIdx) => (
                     <div key={`hm-col-${colIdx}`} className="flex flex-col gap-1">
                       {heatmapData.slice(colIdx * 7, colIdx * 7 + 7).map((day, rowIdx) => {
@@ -1254,7 +1254,7 @@ export default function DeltaDashboard() {
                         return (
                           <div 
                             key={`hm-day-${rowIdx}`}
-                            className={`w-8 h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
+                            className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
                           >
                             {/* Inner PnL Number */}
                             {day.pnl !== 0 && (

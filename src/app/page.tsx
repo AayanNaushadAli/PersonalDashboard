@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -31,6 +31,8 @@ import {
   Route,
   BellRing,
   BellOff,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -168,12 +170,12 @@ function ChartTooltip({ active, payload, label }: any) {
     const usd = payload[0].value as number;
     return (
       <div className="glass-card-strong rounded-lg px-3 py-2 shadow-xl">
-        <p className="text-[10px] text-[#9c8970] mb-1">{label}</p>
-        <p className="text-sm font-semibold text-[#4c9972]">
+        <p className="text-[10px] text-[var(--text-muted)] mb-1">{label}</p>
+        <p className="text-sm font-semibold text-[var(--green)]">
           ${usd.toFixed(2)}
         </p>
-        <p className="text-xs text-[#9c8970]">
-          ₹{(usd * USD_TO_INR).toFixed(0)}
+        <p className="text-xs text-[var(--text-muted)]">
+          â‚¹{(usd * USD_TO_INR).toFixed(0)}
         </p>
       </div>
     );
@@ -272,7 +274,7 @@ async function fetchAllPages(
 }
 
 /* ------------------------------------------------------------------ */
-/* Timestamp parser — handle Delta's microsecond timestamps            */
+/* Timestamp parser â€” handle Delta's microsecond timestamps            */
 /* ------------------------------------------------------------------ */
 
 function parseDeltaTimestamp(ts: string): Date {
@@ -296,7 +298,7 @@ function parseDeltaTimestamp(ts: string): Date {
 
 function formatDate(ts: string): string {
   const d = parseDeltaTimestamp(ts);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "â€”";
   return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -309,7 +311,7 @@ function formatDate(ts: string): string {
 
 function formatDateShort(ts: string): string {
   const d = parseDeltaTimestamp(ts);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "â€”";
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -325,7 +327,7 @@ function fmtUsd(v: number): string {
 }
 
 function fmtInr(v: number): string {
-  return `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `â‚¹${v.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -352,6 +354,25 @@ export default function DeltaDashboard() {
   const [livePositions, setLivePositions] = useState<any[]>([]);
   const [lastLiveUpdate, setLastLiveUpdate] = useState<Date | null>(null);
   const lastTradeRef = useRef<number | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setDarkMode(isDark);
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    const html = document.documentElement;
+    const newDark = !darkMode;
+    if (newDark) {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    setDarkMode(newDark);
+  }, [darkMode]);
 
   /* ---------------------------------------------------------------- */
   /* Test Connection & Refresh                                         */
@@ -428,7 +449,7 @@ export default function DeltaDashboard() {
       const cutoffDate = now - d93;
       const startTime = Math.floor(cutoffDate / 1000);
 
-      // Fetch order history WITHOUT start_time — Delta API's start_time
+      // Fetch order history WITHOUT start_time â€” Delta API's start_time
       // silently excludes some products (e.g. PAXGUSD). We filter client-side.
       const allOrders: OrderRecord[] = await fetchAllPages(
         "/v2/orders/history", ""
@@ -463,10 +484,10 @@ export default function DeltaDashboard() {
 
         const entryStr = entryPriceRaw
           ? parseFloat(entryPriceRaw).toLocaleString("en-US", { maximumFractionDigits: 2 })
-          : "—";
+          : "â€”";
         const exitStr = exitPriceRaw
           ? parseFloat(exitPriceRaw).toLocaleString("en-US", { maximumFractionDigits: 2 })
-          : "—";
+          : "â€”";
 
         const netPnlUsd = pnl - comm;
 
@@ -767,58 +788,67 @@ export default function DeltaDashboard() {
   /* ---------------------------------------------------------------- */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f9f8f6] via-[#efe9e3] to-[#f9f8f6] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: `linear-gradient(135deg, var(--gradient-from), var(--gradient-via), var(--gradient-to))` }}>
       {/* Noise overlay */}
       <div className="noise-overlay" />
       
       {/* Background blobs for glassmorphism */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#d9cfc7]/40 blur-[100px] pointer-events-none mix-blend-multiply" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-[#c9b59c]/20 blur-[120px] pointer-events-none mix-blend-multiply" />
-      <div className="fixed top-[30%] left-[60%] w-[40vw] h-[40vw] rounded-full bg-[#4c9972]/10 blur-[120px] pointer-events-none mix-blend-multiply" />
+      <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[100px] pointer-events-none" style={{ background: 'var(--blob-1)', mixBlendMode: 'var(--blend-mode)' as any }} />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full blur-[120px] pointer-events-none" style={{ background: 'var(--blob-2)', mixBlendMode: 'var(--blend-mode)' as any }} />
+      <div className="fixed top-[30%] left-[60%] w-[40vw] h-[40vw] rounded-full blur-[120px] pointer-events-none" style={{ background: 'var(--blob-3)', mixBlendMode: 'var(--blend-mode)' as any }} />
       
       {/* Dot pattern */}
       <div className="fixed inset-0 opacity-[0.05] pointer-events-none"
-        style={{ backgroundImage: "radial-gradient(circle, #c9b59c 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        style={{ backgroundImage: `radial-gradient(circle, var(--dot-color) 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
 
       {/* ============ HEADER ============ */}
-      <header className="relative z-10 border-b border-[#d9cfc7]/60 glass-card-strong">
+      <header className="relative z-10 glass-card-strong" style={{ borderBottom: '1px solid var(--divider)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Activity className="w-7 h-7 text-[#4c9972]" />
+              <Activity className="w-7 h-7 text-[var(--green)]" />
               {status === "success" && (
                 <>
-                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4c9972] rounded-full animate-ping opacity-75" />
-                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4c9972] rounded-full" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[var(--green)] rounded-full animate-ping opacity-75" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[var(--green)] rounded-full" />
                 </>
               )}
             </div>
-            <h1 className="text-lg sm:text-xl font-semibold tracking-tight font-[Inter] text-[#3d352a]">
-              Delta API<span className="text-[#9c8970] font-normal"> : Connectivity Status</span>
+            <h1 className="text-lg sm:text-xl font-semibold tracking-tight font-[Inter]" style={{ color: 'var(--text-primary)' }}>
+              Delta API<span style={{ color: 'var(--text-muted)' }} className="font-normal"> : Connectivity Status</span>
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/virtual" className="text-xs font-medium text-[#7a6a56] bg-[#c9b59c]/15 px-3 py-1.5 rounded-full border border-[#c9b59c]/30 hover:bg-[#c9b59c]/25 transition-colors flex items-center gap-1.5">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg transition-all hover:scale-110" 
+              style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-glass)' }}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? <Sun className="w-4 h-4" style={{ color: 'var(--text-accent)' }} /> : <Moon className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
+            </button>
+            <Link href="/virtual" className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--text-accent)]/15 px-3 py-1.5 rounded-full border border-[#c9b59c]/30 hover:bg-[var(--text-accent)]/25 transition-colors flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" /> Virtual Trade
             </Link>
             {status === "idle" && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#9c8970] bg-[#efe9e3] px-3 py-1.5 rounded-full border border-[#d9cfc7]/50">
-                <span className="w-2 h-2 rounded-full bg-[#d9cfc7]" /> Awaiting Test
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border border-[var(--divider)]/50">
+                <span className="w-2 h-2 rounded-full bg-[var(--bg-tertiary)]" /> Awaiting Test
               </span>
             )}
             {isLoading && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#b8a088] bg-[#c9b59c]/10 px-3 py-1.5 rounded-full border border-[#c9b59c]/30">
-                <Loader2 className="w-3 h-3 animate-spin" /> {historyLoading ? "Loading History…" : "Testing…"}
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-faint)] bg-[var(--text-accent)]/10 px-3 py-1.5 rounded-full border border-[#c9b59c]/30">
+                <Loader2 className="w-3 h-3 animate-spin" /> {historyLoading ? "Loading Historyâ€¦" : "Testingâ€¦"}
               </span>
             )}
             {status === "success" && !isLoading && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#4c9972] bg-[#4c9972]/10 px-3 py-1.5 rounded-full border border-[#4c9972]/25 animate-pulse-glow">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--green)] bg-[var(--green)]/10 px-3 py-1.5 rounded-full border border-[#4c9972]/25 animate-pulse-glow">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Connected
               </span>
             )}
             {status === "error" && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#b95a50] bg-[#b95a50]/10 px-3 py-1.5 rounded-full border border-[#b95a50]/25 animate-pulse-glow-red">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--red)] bg-[var(--red)]/10 px-3 py-1.5 rounded-full border border-[#b95a50]/25 animate-pulse-glow-red">
                 <XCircle className="w-3.5 h-3.5" /> Error
               </span>
             )}
@@ -832,8 +862,8 @@ export default function DeltaDashboard() {
         {/* ---- REFRESH BUTTON ---- */}
         <section className="animate-fade-in-up flex items-center justify-between glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${status === 'success' ? 'bg-[#4c9972] shadow-[0_0_8px_rgba(76,153,114,0.4)]' : 'bg-[#d9cfc7]'}`} />
-            <span className="text-xs font-medium text-[#9c8970]">
+            <div className={`w-2 h-2 rounded-full ${status === 'success' ? 'bg-[var(--green)] shadow-[0_0_8px_rgba(76,153,114,0.4)]' : 'bg-[var(--bg-tertiary)]'}`} />
+            <span className="text-xs font-medium text-[var(--text-muted)]">
               {status === "loading" ? "Syncing data..." : status === "success" ? "Real-time data active" : "Connection idle"}
             </span>
           </div>
@@ -848,7 +878,7 @@ export default function DeltaDashboard() {
                   }
                   setAutoPoll(!autoPoll);
                }}
-               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${autoPoll ? 'bg-[#4c9972]/10 border-[#4c9972]/30 text-[#4c9972]' : 'bg-white/30 border-[#d9cfc7]/50 text-[#9c8970] hover:bg-white/50'}`}
+               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${autoPoll ? 'bg-[var(--green)]/10 border-[#4c9972]/30 text-[var(--green)]' : 'bg-[var(--bg-glass)] border-[var(--divider)]/50 text-[var(--text-muted)] hover:bg-[var(--bg-glass-hover)]'}`}
             >
               {autoPoll ? <BellRing className="w-3.5 h-3.5 animate-pulse" /> : <BellOff className="w-3.5 h-3.5" />}
               {autoPoll ? "Polling: 30s" : "Auto-Poll: OFF"}
@@ -858,7 +888,7 @@ export default function DeltaDashboard() {
               type="button" 
               onClick={runAll} 
               disabled={status === "loading"}
-              className="flex items-center gap-2 bg-[#c9b59c] hover:bg-[#b8a088] disabled:opacity-50 text-white font-medium text-xs px-4 py-2 rounded-lg transition-all shadow-md"
+              className="flex items-center gap-2 bg-[var(--text-accent)] hover:bg-[var(--text-faint)] disabled:opacity-50 text-white font-medium text-xs px-4 py-2 rounded-lg transition-all shadow-md"
             >
               {status === "loading" ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -872,48 +902,48 @@ export default function DeltaDashboard() {
 
         {/* ---- METRIC CARDS ---- */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Total Balance — dual currency */}
+          {/* Total Balance â€” dual currency */}
           <div className="animate-fade-in-up glass-card-strong rounded-2xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
             onClick={() => results["/v2/wallet/balances"] && setRawOutput(JSON.stringify(results["/v2/wallet/balances"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2.5 rounded-xl bg-[#4c9972]/10 text-[#4c9972]"><Wallet className="w-5 h-5" /></div>
-              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[#4c9972]" />}
+              <div className="p-2.5 rounded-xl bg-[var(--green)]/10 text-[var(--green)]"><Wallet className="w-5 h-5" /></div>
+              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
             </div>
-            <p className="text-3xl font-bold text-[#3d352a] font-[Inter] leading-tight">
-              {status !== "idle" ? fmtUsd(balanceUsd) : "—"}
+            <p className="text-3xl font-bold text-[var(--text-primary)] font-[Inter] leading-tight">
+              {status !== "idle" ? fmtUsd(balanceUsd) : "â€”"}
             </p>
-            <p className="text-base font-semibold text-[#4c9972]/70 font-[Inter] mt-0.5">
+            <p className="text-base font-semibold text-[var(--green)]/70 font-[Inter] mt-0.5">
               {status !== "idle" ? fmtInr(balanceInr) : ""}
             </p>
-            <p className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mt-2">Total Balance</p>
-            <p className="mt-1 text-[10px] font-mono text-[#c9b59c]">GET /v2/wallet/balances</p>
+            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Total Balance</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/wallet/balances</p>
           </div>
 
           {/* Live Unrealized PnL */}
           <div className={`animate-fade-in-up glass-card-strong rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg`}
             style={{ animationDelay: "50ms" }}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-2.5 rounded-xl ${totalUnrealizedPnl >= 0 ? "bg-[#4c9972]/10 text-[#4c9972]" : "bg-[#b95a50]/10 text-[#b95a50]"}`}>
+              <div className={`p-2.5 rounded-xl ${totalUnrealizedPnl >= 0 ? "bg-[var(--green)]/10 text-[var(--green)]" : "bg-[var(--red)]/10 text-[var(--red)]"}`}>
                 <Activity className={`w-5 h-5 ${autoPoll ? "animate-pulse" : ""}`} />
               </div>
               {autoPoll && (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#4c9972]/10 border border-[#4c9972]/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#4c9972] animate-ping" />
-                  <span className="text-[8px] font-bold text-[#4c9972] uppercase tracking-tighter">Live</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[var(--green)]/10 border border-[#4c9972]/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-ping" />
+                  <span className="text-[8px] font-bold text-[var(--green)] uppercase tracking-tighter">Live</span>
                 </div>
               )}
             </div>
-            <p className={`text-3xl font-bold font-[Inter] leading-tight ${totalUnrealizedPnl >= 0 ? "text-[#4c9972]" : "text-[#b95a50]"}`}>
-              {status !== "idle" ? (totalUnrealizedPnl >= 0 ? "+" : "") + fmtUsd(totalUnrealizedPnl) : "—"}
+            <p className={`text-3xl font-bold font-[Inter] leading-tight ${totalUnrealizedPnl >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
+              {status !== "idle" ? (totalUnrealizedPnl >= 0 ? "+" : "") + fmtUsd(totalUnrealizedPnl) : "â€”"}
             </p>
-            <p className={`text-base font-semibold font-[Inter] mt-0.5 ${totalUnrealizedPnl >= 0 ? "text-[#4c9972]/70" : "text-[#b95a50]/70"}`}>
+            <p className={`text-base font-semibold font-[Inter] mt-0.5 ${totalUnrealizedPnl >= 0 ? "text-[var(--green)]/70" : "text-[var(--red)]/70"}`}>
               {status !== "idle" ? (totalUnrealizedPnl >= 0 ? "+" : "") + fmtInr(totalUnrealizedPnl * USD_TO_INR) : ""}
             </p>
-            <p className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mt-2">Live Unrealized PnL</p>
+            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Live Unrealized PnL</p>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] font-mono text-[#c9b59c]">GET /v2/positions/margined</p>
+              <p className="text-[10px] font-mono text-[var(--text-accent)]">GET /v2/positions/margined</p>
               {lastLiveUpdate && (
-                <p className="text-[9px] font-mono text-[#b8a088] italic">
+                <p className="text-[9px] font-mono text-[var(--text-faint)] italic">
                   Updated: {lastLiveUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </p>
               )}
@@ -925,14 +955,14 @@ export default function DeltaDashboard() {
             style={{ animationDelay: "100ms" }}
             onClick={() => results["/v2/orders"] && setRawOutput(JSON.stringify(results["/v2/orders"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2.5 rounded-xl bg-[#c9b59c]/15 text-[#9c8970]"><ShoppingCart className="w-5 h-5" /></div>
-              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[#4c9972]" />}
+              <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-muted)]"><ShoppingCart className="w-5 h-5" /></div>
+              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
             </div>
-            <p className="text-3xl font-bold text-[#3d352a] font-[Inter]">
-              {status !== "idle" ? activeOrdersCount : "—"}
+            <p className="text-3xl font-bold text-[var(--text-primary)] font-[Inter]">
+              {status !== "idle" ? activeOrdersCount : "â€”"}
             </p>
-            <p className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mt-2">Active Orders</p>
-            <p className="mt-1 text-[10px] font-mono text-[#c9b59c]">GET /v2/orders</p>
+            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Active Orders</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/orders</p>
           </div>
 
           {/* Open Positions */}
@@ -940,14 +970,14 @@ export default function DeltaDashboard() {
             style={{ animationDelay: "200ms" }}
             onClick={() => results["/v2/positions/margined"] && setRawOutput(JSON.stringify(results["/v2/positions/margined"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2.5 rounded-xl bg-[#c9b59c]/15 text-[#b8a088]"><BarChart3 className="w-5 h-5" /></div>
-              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[#4c9972]" />}
+              <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-faint)]"><BarChart3 className="w-5 h-5" /></div>
+              {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
             </div>
-            <p className="text-3xl font-bold text-[#3d352a] font-[Inter]">
-              {status !== "idle" ? openPosCount : "—"}
+            <p className="text-3xl font-bold text-[var(--text-primary)] font-[Inter]">
+              {status !== "idle" ? openPosCount : "â€”"}
             </p>
-            <p className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mt-2">Open Positions</p>
-            <p className="mt-1 text-[10px] font-mono text-[#c9b59c]">GET /v2/positions/margined</p>
+            <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Open Positions</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/positions/margined</p>
           </div>
         </section>
 
@@ -956,39 +986,39 @@ export default function DeltaDashboard() {
           <section className="animate-fade-in-up grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="glass-card rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-lg bg-[#4c9972]/10 text-[#4c9972]"><TrendingUp className="w-4 h-4" /></div>
-                <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider">Total Profit</span>
+                <div className="p-2 rounded-lg bg-[var(--green)]/10 text-[var(--green)]"><TrendingUp className="w-4 h-4" /></div>
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Total Profit</span>
               </div>
-              <p className="text-lg font-bold text-[#4c9972] font-[Inter]">{fmtInr(totalProfit * USD_TO_INR)}</p>
-              <p className="text-xs text-[#b8a088]">{fmtUsd(totalProfit)}</p>
+              <p className="text-lg font-bold text-[var(--green)] font-[Inter]">{fmtInr(totalProfit * USD_TO_INR)}</p>
+              <p className="text-xs text-[var(--text-faint)]">{fmtUsd(totalProfit)}</p>
             </div>
             <div className="glass-card rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-lg bg-[#b95a50]/10 text-[#b95a50]"><TrendingDown className="w-4 h-4" /></div>
-                <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider">Total Loss</span>
+                <div className="p-2 rounded-lg bg-[var(--red)]/10 text-[var(--red)]"><TrendingDown className="w-4 h-4" /></div>
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Total Loss</span>
               </div>
-              <p className="text-lg font-bold text-[#b95a50] font-[Inter]">{fmtInr(totalLoss * USD_TO_INR)}</p>
-              <p className="text-xs text-[#b8a088]">{fmtUsd(totalLoss)}</p>
+              <p className="text-lg font-bold text-[var(--red)] font-[Inter]">{fmtInr(totalLoss * USD_TO_INR)}</p>
+              <p className="text-xs text-[var(--text-faint)]">{fmtUsd(totalLoss)}</p>
             </div>
             <div className="glass-card rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-lg bg-[#c9b59c]/15 text-[#9c8970]"><DollarSign className="w-4 h-4" /></div>
-                <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider">Total Fees</span>
+                <div className="p-2 rounded-lg bg-[var(--text-accent)]/15 text-[var(--text-muted)]"><DollarSign className="w-4 h-4" /></div>
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Total Fees</span>
               </div>
-              <p className="text-lg font-bold text-[#9c8970] font-[Inter]">{fmtInr(totalFees * USD_TO_INR)}</p>
-              <p className="text-xs text-[#b8a088]">{fmtUsd(totalFees)}</p>
+              <p className="text-lg font-bold text-[var(--text-muted)] font-[Inter]">{fmtInr(totalFees * USD_TO_INR)}</p>
+              <p className="text-xs text-[var(--text-faint)]">{fmtUsd(totalFees)}</p>
             </div>
             <div className={`glass-card rounded-2xl p-5`}>
               <div className="flex items-center gap-2 mb-3">
-                <div className={`p-2 rounded-lg ${netPnl >= 0 ? "bg-[#4c9972]/10 text-[#4c9972]" : "bg-[#b95a50]/10 text-[#b95a50]"}`}>
+                <div className={`p-2 rounded-lg ${netPnl >= 0 ? "bg-[var(--green)]/10 text-[var(--green)]" : "bg-[var(--red)]/10 text-[var(--red)]"}`}>
                   {netPnl >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                 </div>
-                <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider">Net PnL</span>
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Net PnL</span>
               </div>
-              <p className={`text-lg font-bold font-[Inter] ${netPnl >= 0 ? "text-[#4c9972]" : "text-[#b95a50]"}`}>
+              <p className={`text-lg font-bold font-[Inter] ${netPnl >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
                 {netPnl >= 0 ? "+" : ""}{fmtInr(netPnl * USD_TO_INR)}
               </p>
-              <p className="text-xs text-[#b8a088]">{netPnl >= 0 ? "+" : ""}{fmtUsd(netPnl)}</p>
+              <p className="text-xs text-[var(--text-faint)]">{netPnl >= 0 ? "+" : ""}{fmtUsd(netPnl)}</p>
             </div>
           </section>
         )}
@@ -997,40 +1027,40 @@ export default function DeltaDashboard() {
         {historyLoaded && (
           <section className="animate-fade-in-up">
             <div className="glass-card-strong rounded-2xl p-5 shadow-lg">
-              <div className="flex items-center gap-2 mb-4 border-b border-[#d9cfc7]/40 pb-3">
-                <Target className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-sm font-medium text-[#5c503f]">Trade Statistics</span>
+              <div className="flex items-center gap-2 mb-4 border-b border-[var(--divider)]/40 pb-3">
+                <Target className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Trade Statistics</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:divide-x divide-[#d9cfc7]/30">
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] flex items-center gap-1.5 text-[#9c8970] font-medium uppercase tracking-wider mb-1">Win Rate</span>
-                  <span className={`text-xl font-bold font-[Inter] ${tradeStats.winRate >= 50 ? 'text-[#4c9972]' : (tradeStats.totalTrades > 0 ? 'text-[#b95a50]' : 'text-[#5c503f]')}`}>
-                    {tradeStats.totalTrades > 0 ? tradeStats.winRate.toFixed(1) + '%' : '—'}
+                  <span className="text-[10px] flex items-center gap-1.5 text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Win Rate</span>
+                  <span className={`text-xl font-bold font-[Inter] ${tradeStats.winRate >= 50 ? 'text-[#4c9972]' : (tradeStats.totalTrades > 0 ? 'text-[#b95a50]' : 'text-[var(--text-secondary)]')}`}>
+                    {tradeStats.totalTrades > 0 ? tradeStats.winRate.toFixed(1) + '%' : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">{tradeStats.totalWinCount}W - {tradeStats.totalLossCount}L</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">{tradeStats.totalWinCount}W - {tradeStats.totalLossCount}L</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Total Trades</span>
-                  <span className="text-xl font-bold font-[Inter] text-[#3d352a]">{tradeStats.totalTrades > 0 ? tradeStats.totalTrades : '—'}</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Total Trades</span>
+                  <span className="text-xl font-bold font-[Inter] text-[var(--text-primary)]">{tradeStats.totalTrades > 0 ? tradeStats.totalTrades : 'â€”'}</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Average Win</span>
-                  <span className="text-xl font-bold font-[Inter] text-[#4c9972]">
-                    {tradeStats.avgWin > 0 ? fmtUsd(tradeStats.avgWin) : '—'}
-                  </span>
-                </div>
-                <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Average Loss</span>
-                  <span className="text-xl font-bold font-[Inter] text-[#b95a50]">
-                    {tradeStats.avgLoss > 0 ? '-' + fmtUsd(tradeStats.avgLoss) : '—'}
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Average Win</span>
+                  <span className="text-xl font-bold font-[Inter] text-[var(--green)]">
+                    {tradeStats.avgWin > 0 ? fmtUsd(tradeStats.avgWin) : 'â€”'}
                   </span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Profit Factor</span>
-                  <span className={`text-xl font-bold font-[Inter] ${tradeStats.profitFactor >= 1 ? 'text-[#4c9972]' : (tradeStats.totalTrades > 0 ? 'text-[#b95a50]' : 'text-[#5c503f]')}`}>
-                    {tradeStats.totalTrades > 0 ? (tradeStats.profitFactor > 99 ? 'MAX' : tradeStats.profitFactor.toFixed(2)) : '—'}
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Average Loss</span>
+                  <span className="text-xl font-bold font-[Inter] text-[var(--red)]">
+                    {tradeStats.avgLoss > 0 ? '-' + fmtUsd(tradeStats.avgLoss) : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Gross Profit / Gross Loss</span>
+                </div>
+                <div className="flex flex-col px-2">
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Profit Factor</span>
+                  <span className={`text-xl font-bold font-[Inter] ${tradeStats.profitFactor >= 1 ? 'text-[#4c9972]' : (tradeStats.totalTrades > 0 ? 'text-[#b95a50]' : 'text-[var(--text-secondary)]')}`}>
+                    {tradeStats.totalTrades > 0 ? (tradeStats.profitFactor > 99 ? 'MAX' : tradeStats.profitFactor.toFixed(2)) : 'â€”'}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Gross Profit / Gross Loss</span>
                 </div>
               </div>
             </div>
@@ -1042,64 +1072,64 @@ export default function DeltaDashboard() {
           <section className="animate-fade-in-up grid grid-cols-1 lg:grid-cols-2 gap-4 mt-[-4px]">
             {/* Box 1: Math & Volatility */}
             <div className="glass-card-strong rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-              <div className="flex items-center gap-2 mb-4 border-b border-[#d9cfc7]/40 pb-3">
-                <Calculator className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-sm font-medium text-[#5c503f]">Math & Volatility</span>
+              <div className="flex items-center gap-2 mb-4 border-b border-[var(--divider)]/40 pb-3">
+                <Calculator className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Math & Volatility</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:divide-x divide-[#d9cfc7]/30">
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] flex items-center gap-1.5 text-[#9c8970] font-medium uppercase tracking-wider mb-1">
-                    Daily Returns <Sigma className="w-3 h-3 text-[#b8a088]" />
+                  <span className="text-[10px] flex items-center gap-1.5 text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">
+                    Daily Returns <Sigma className="w-3 h-3 text-[var(--text-faint)]" />
                   </span>
-                  <span className="text-xl font-bold font-[Inter] text-[#3d352a]">
-                    {mathStats.sigma > 0 ? fmtUsd(mathStats.sigma) : '—'}
+                  <span className="text-xl font-bold font-[Inter] text-[var(--text-primary)]">
+                    {mathStats.sigma > 0 ? fmtUsd(mathStats.sigma) : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Avg daily swing</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Avg daily swing</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Sharpe Ratio</span>
-                  <span className={`text-xl font-bold font-[Inter] ${mathStats.sharpe >= 1 ? 'text-[#4c9972]' : (mathStats.sharpe > 0 ? 'text-[#c9b59c]' : 'text-[#5c503f]')}`}>
-                    {mathStats.sigma > 0 ? mathStats.sharpe.toFixed(2) : '—'}
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Sharpe Ratio</span>
+                  <span className={`text-xl font-bold font-[Inter] ${mathStats.sharpe >= 1 ? 'text-[#4c9972]' : (mathStats.sharpe > 0 ? 'text-[var(--text-accent)]' : 'text-[var(--text-secondary)]')}`}>
+                    {mathStats.sigma > 0 ? mathStats.sharpe.toFixed(2) : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Return / Risk</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Return / Risk</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Max Drawdown</span>
-                  <span className={`text-xl font-bold font-[Inter] ${mathStats.maxDrawdown > 20 ? 'text-[#b95a50]' : 'text-[#c9b59c]'}`}>
-                    {mathStats.maxDrawdown > 0 ? '-' + mathStats.maxDrawdown.toFixed(2) + '%' : '—'}
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Max Drawdown</span>
+                  <span className={`text-xl font-bold font-[Inter] ${mathStats.maxDrawdown > 20 ? 'text-[#b95a50]' : 'text-[var(--text-accent)]'}`}>
+                    {mathStats.maxDrawdown > 0 ? '-' + mathStats.maxDrawdown.toFixed(2) + '%' : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Peak drop</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Peak drop</span>
                 </div>
               </div>
             </div>
 
             {/* Box 2: Recovery Analytics */}
             <div className="glass-card-strong rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-              <div className="flex items-center gap-2 mb-4 border-b border-[#d9cfc7]/40 pb-3">
-                <Route className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-sm font-medium text-[#5c503f]">Recovery Analytics (Target: $500)</span>
+              <div className="flex items-center gap-2 mb-4 border-b border-[var(--divider)]/40 pb-3">
+                <Route className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Recovery Analytics (Target: $500)</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:divide-x divide-[#d9cfc7]/30">
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Run Rate to $500</span>
-                  <span className="text-xl font-bold font-[Inter] text-[#3d352a]">
-                    +{fmtUsd(recoveryStats.requiredDaily)}<span className="text-sm font-normal text-[#b8a088]">/day</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Run Rate to $500</span>
+                  <span className="text-xl font-bold font-[Inter] text-[var(--text-primary)]">
+                    +{fmtUsd(recoveryStats.requiredDaily)}<span className="text-sm font-normal text-[var(--text-faint)]">/day</span>
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Required daily for 30 days</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Required daily for 30 days</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Recovery Rate</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Recovery Rate</span>
                   <span className={`text-xl font-bold font-[Inter] ${recoveryStats.daysToRecover <= 1 ? 'text-[#4c9972]' : 'text-[#b95a50]'}`}>
-                    {recoveryStats.daysToRecover > 0 ? recoveryStats.daysToRecover.toFixed(1) + 'x' : '—'}
+                    {recoveryStats.daysToRecover > 0 ? recoveryStats.daysToRecover.toFixed(1) + 'x' : 'â€”'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Winning days needed per losing day</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Winning days needed per losing day</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="text-[10px] text-[#9c8970] font-medium uppercase tracking-wider mb-1">Projected Path</span>
-                  <span className={`text-xl font-bold font-[Inter] ${recoveryStats.projectedDays > 0 && recoveryStats.projectedDays < 60 ? 'text-[#4c9972]' : 'text-[#c9b59c]'}`}>
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mb-1">Projected Path</span>
+                  <span className={`text-xl font-bold font-[Inter] ${recoveryStats.projectedDays > 0 && recoveryStats.projectedDays < 60 ? 'text-[#4c9972]' : 'text-[var(--text-accent)]'}`}>
                     {recoveryStats.projectedDays > 0 ? Math.ceil(recoveryStats.projectedDays) + ' Days' : 'Never'}
                   </span>
-                  <span className="text-[10px] text-[#b8a088] mt-0.5">Time to $500 at current win rate</span>
+                  <span className="text-[10px] text-[var(--text-faint)] mt-0.5">Time to $500 at current win rate</span>
                 </div>
               </div>
             </div>
@@ -1112,10 +1142,10 @@ export default function DeltaDashboard() {
             <div className="glass-card-strong rounded-2xl p-6 shadow-lg">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[#4c9972]" />
-                  <span className="text-sm font-medium text-[#5c503f]">Account Equity — Last 93 Days</span>
+                  <BarChart3 className="w-4 h-4 text-[var(--green)]" />
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Account Equity â€” Last 93 Days</span>
                 </div>
-                <span className="text-xs text-[#b8a088] font-mono">{equityCurve.length} days</span>
+                <span className="text-xs text-[var(--text-faint)] font-mono">{equityCurve.length} days</span>
               </div>
               <div className="h-[260px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1127,11 +1157,11 @@ export default function DeltaDashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#d9cfc7" strokeOpacity={0.4} vertical={false} />
-                    <XAxis dataKey="date" tick={{ fill: "#9c8970", fontSize: 10 }} axisLine={{ stroke: "#d9cfc7" }} tickLine={false} interval="preserveStartEnd" />
-                    <YAxis tick={{ fill: "#9c8970", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} width={55} />
+                    <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={{ stroke: "var(--divider)" }} tickLine={false} interval="preserveStartEnd" />
+                    <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} width={55} />
                     <Tooltip content={<ChartTooltip />} />
                     <Area type="monotone" dataKey="balance" stroke="#4c9972" strokeWidth={2} fill="url(#eqGrad)" dot={false}
-                      activeDot={{ r: 4, fill: "#4c9972", stroke: "#f9f8f6", strokeWidth: 2 }} />
+                      activeDot={{ r: 4, fill: "var(--green)", stroke: "var(--bg-base)", strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -1146,10 +1176,10 @@ export default function DeltaDashboard() {
             {/* Asset Distribution / Portfolio Allocation */}
             <div className="glass-card-strong rounded-2xl p-6 shadow-lg lg:col-span-1 flex flex-col">
               <div className="flex items-center gap-2 mb-2">
-                <PieChartIcon className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-sm font-medium text-[#5c503f]">Portfolio Distribution</span>
+                <PieChartIcon className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Portfolio Distribution</span>
               </div>
-              <p className="text-[10px] text-[#b8a088] mb-6">Capital allocation across margin</p>
+              <p className="text-[10px] text-[var(--text-faint)] mb-6">Capital allocation across margin</p>
               
               <div className="flex-1 flex flex-col justify-center items-center">
                 {assetDistribution.length > 0 ? (
@@ -1173,7 +1203,7 @@ export default function DeltaDashboard() {
                           </Pie>
                           <Tooltip 
                             formatter={(value: any) => `$${Number(value).toFixed(2)}`}
-                            contentStyle={{ backgroundColor: "rgba(255,255,255,0.85)", borderColor: "#d9cfc7", fontSize: "12px", borderRadius: "8px", backdropFilter: "blur(12px)" }}
+                            contentStyle={{ backgroundColor: "var(--bg-glass-strong)", borderColor: "var(--divider)", fontSize: "12px", borderRadius: "8px", backdropFilter: "blur(12px)" }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -1183,13 +1213,13 @@ export default function DeltaDashboard() {
                       {assetDistribution.map((entry, index) => (
                         <div key={`legend-${index}`} className="flex items-center gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.name === "Available Margin" ? "#d9cfc7" : PIE_COLORS[index % PIE_COLORS.length] }}></div>
-                          <span className="text-xs text-[#7a6a56]">{entry.name}</span>
+                          <span className="text-xs text-[var(--text-secondary)]">{entry.name}</span>
                         </div>
                       ))}
                     </div>
                   </>
                 ) : (
-                  <div className="text-[#b8a088] text-xs italic">No allocation data.</div>
+                  <div className="text-[var(--text-faint)] text-xs italic">No allocation data.</div>
                 )}
               </div>
             </div>
@@ -1197,25 +1227,25 @@ export default function DeltaDashboard() {
             {/* PnL Heatmap */}
             <div className="glass-card-strong rounded-2xl p-6 shadow-lg lg:col-span-2">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-sm font-medium text-[#5c503f]">Daily PnL Heatmap</span>
+                <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Daily PnL Heatmap</span>
               </div>
-              <p className="text-[10px] text-[#b8a088] mb-6">Last 93 days performance (weekends marked with a dot)</p>
+              <p className="text-[10px] text-[var(--text-faint)] mb-6">Last 93 days performance (weekends marked with a dot)</p>
               
               <div className="overflow-visible pb-2 flex items-center justify-center">
                 <div className="flex gap-[3px] min-w-max">
                   {Array.from({ length: Math.ceil(heatmapData.length / 7) }).map((_, colIdx) => (
                     <div key={`hm-col-${colIdx}`} className="flex flex-col gap-[3px]">
                       {heatmapData.slice(colIdx * 7, colIdx * 7 + 7).map((day, rowIdx) => {
-                        let bgColor = "bg-[#efe9e3]"; // Empty/Neutral
+                        let bgColor = "bg-[var(--bg-secondary)]"; // Empty/Neutral
                         let hoverBorder = "hover:border-[#c9b59c]";
                         if (day.pnl > 0) {
-                          if (day.pnl > 10) bgColor = "bg-[#4c9972]";
+                          if (day.pnl > 10) bgColor = "bg-[var(--green)]";
                           else if (day.pnl > 2) bgColor = "bg-[#6aad8b]";
                           else bgColor = "bg-[#8bc4a5]";
                           hoverBorder = "hover:border-[#4c9972]";
                         } else if (day.pnl < 0) {
-                          if (day.pnl < -10) bgColor = "bg-[#b95a50]";
+                          if (day.pnl < -10) bgColor = "bg-[var(--red)]";
                           else if (day.pnl < -2) bgColor = "bg-[#c9766e]";
                           else bgColor = "bg-[#d9928b]";
                           hoverBorder = "hover:border-[#b95a50]";
@@ -1230,9 +1260,9 @@ export default function DeltaDashboard() {
                             {day.isWeekend && <div className="absolute top-[2px] right-[2px] w-[2px] h-[2px] rounded-full bg-slate-900/40 pointer-events-none"></div>}
                             
                             {/* Simple tooltip */}
-                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity glass-card-strong text-[#3d352a] text-xs py-1.5 px-3 rounded-lg w-max z-[100] pointer-events-none shadow-xl">
+                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity glass-card-strong text-[var(--text-primary)] text-xs py-1.5 px-3 rounded-lg w-max z-[100] pointer-events-none shadow-xl">
                               <span className="font-semibold block mb-0.5">{day.dateFull}</span>
-                              <span className={day.pnl > 0 ? "text-[#4c9972] font-mono" : day.pnl < 0 ? "text-[#b95a50] font-mono" : "text-[#9c8970] font-mono"}>
+                              <span className={day.pnl > 0 ? "text-[var(--green)] font-mono" : day.pnl < 0 ? "text-[var(--red)] font-mono" : "text-[var(--text-muted)] font-mono"}>
                                 {day.pnl !== 0 ? (day.pnl > 0 ? `+$${day.pnl.toFixed(2)}` : `-$${Math.abs(day.pnl).toFixed(2)}`) : "No Trades"}
                               </span>
                             </div>
@@ -1252,8 +1282,8 @@ export default function DeltaDashboard() {
         {status === "success" && (openPositions.length > 0 || activeOrders.length > 0) && (
           <section className="animate-fade-in-up space-y-4">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-[#9c8970]" />
-              <span className="text-sm font-medium text-[#5c503f]">Risk Management</span>
+              <Shield className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Risk Management</span>
             </div>
 
             {/* --- Open Positions Risk --- */}
@@ -1264,7 +1294,7 @@ export default function DeltaDashboard() {
               const leverage = parseFloat(pos.leverage || "0");
               const posSize = Math.abs(pos.size || 0);
               const posSide = pos.size > 0 ? "Long" : "Short";
-              const symbol = pos.product_symbol || pos.product?.symbol || "—";
+              const symbol = pos.product_symbol || pos.product?.symbol || "â€”";
               const unrealisedPnl = parseFloat(pos.realized_pnl || pos.pnl || "0");
               const margin = parseFloat(pos.margin || "0");
 
@@ -1272,7 +1302,7 @@ export default function DeltaDashboard() {
               const notional = posSize; // each contract = $1 on Delta
               const effectiveLeverage = margin > 0 ? notional / margin : leverage;
 
-              // Liquidation proximity: how far is mark from liq, relative to entry→liq distance
+              // Liquidation proximity: how far is mark from liq, relative to entryâ†’liq distance
               let liqProximityPct = 0;
               if (liqPrice > 0 && entryPrice > 0) {
                 if (posSide === "Long") {
@@ -1294,45 +1324,45 @@ export default function DeltaDashboard() {
                 <div key={`pos-${idx}`} className="glass-card-strong rounded-2xl p-6 shadow-lg">
                   <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-[#c9b59c]/15 text-[#9c8970] relative">
+                      <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-muted)] relative">
                         <Crosshair className={`w-5 h-5 ${autoPoll ? "animate-spin-slow" : ""}`} />
                         {autoPoll && (
-                          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#4c9972] rounded-full border-2 border-white animate-pulse" />
+                          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--green)] rounded-full border-2 border-[var(--bg-base)] animate-pulse" />
                         )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-[#3d352a]">{symbol}</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">{symbol}</span>
                           {autoPoll && (
-                            <span className="text-[7px] font-bold text-[#4c9972] uppercase tracking-widest bg-[#4c9972]/10 px-1 rounded-sm border border-[#4c9972]/20">LIVE Tracking</span>
+                            <span className="text-[7px] font-bold text-[var(--green)] uppercase tracking-widest bg-[var(--green)]/10 px-1 rounded-sm border border-[#4c9972]/20">LIVE Tracking</span>
                           )}
                         </div>
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${posSide === "Long" ? "bg-[#4c9972]/10 text-[#4c9972]" : "bg-[#b95a50]/10 text-[#b95a50]"}`}>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${posSide === "Long" ? "bg-[var(--green)]/10 text-[var(--green)]" : "bg-[var(--red)]/10 text-[var(--red)]"}`}>
                           {posSide}
                         </span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="text-xs text-[#3d352a] font-mono font-bold">{posSize.toLocaleString()} <span className="text-[#b8a088] font-normal">Contr.</span></span>
+                      <span className="text-xs text-[var(--text-primary)] font-mono font-bold">{posSize.toLocaleString()} <span className="text-[var(--text-faint)] font-normal">Contr.</span></span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div>
-                      <p className="text-[10px] text-[#9c8970] uppercase tracking-wider mb-1">Entry Price</p>
-                      <p className="text-sm font-mono font-semibold text-[#3d352a]">${entryPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Entry Price</p>
+                      <p className="text-sm font-mono font-semibold text-[var(--text-primary)]">${entryPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-[#9c8970] uppercase tracking-wider mb-1">Mark Price</p>
-                      <p className="text-sm font-mono font-semibold text-[#7a6a56]">${markPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Mark Price</p>
+                      <p className="text-sm font-mono font-semibold text-[var(--text-secondary)]">${markPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-[#9c8970] uppercase tracking-wider mb-1">Leverage</p>
-                      <p className="text-sm font-mono font-bold text-[#c9b59c]">{effectiveLeverage.toFixed(1)}x</p>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Leverage</p>
+                      <p className="text-sm font-mono font-bold text-[var(--text-accent)]">{effectiveLeverage.toFixed(1)}x</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-[#9c8970] uppercase tracking-wider mb-1">Unrealised PnL</p>
-                      <p className={`text-sm font-mono font-semibold ${unrealisedPnl >= 0 ? "text-[#4c9972]" : "text-[#b95a50]"}`}>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Unrealised PnL</p>
+                      <p className={`text-sm font-mono font-semibold ${unrealisedPnl >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
                         {unrealisedPnl >= 0 ? "+" : ""}{fmtUsd(unrealisedPnl)}
                       </p>
                     </div>
@@ -1342,14 +1372,14 @@ export default function DeltaDashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
-                        <AlertTriangle className={`w-3.5 h-3.5 ${liqProximityPct > 70 ? "text-[#b95a50] animate-pulse" : liqProximityPct > 40 ? "text-[#c9b59c]" : "text-[#b8a088]"}`} />
-                        <span className="text-[10px] text-[#9c8970] uppercase tracking-wider font-medium">Liquidation Proximity</span>
+                        <AlertTriangle className={`w-3.5 h-3.5 ${liqProximityPct > 70 ? "text-[var(--red)] animate-pulse" : liqProximityPct > 40 ? "text-[var(--text-accent)]" : "text-[var(--text-faint)]"}`} />
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-medium">Liquidation Proximity</span>
                       </div>
-                      <span className="text-xs font-mono text-[#7a6a56]">
-                        Liq: <span className="text-[#b95a50] font-semibold">${liqPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</span>
+                      <span className="text-xs font-mono text-[var(--text-secondary)]">
+                        Liq: <span className="text-[var(--red)] font-semibold">${liqPrice.toLocaleString(undefined, {minimumFractionDigits: 1})}</span>
                       </span>
                     </div>
-                    <div className="relative h-3 bg-[#efe9e3] rounded-full overflow-hidden">
+                    <div className="relative h-3 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                       <div
                         className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${liqBarColor} ${liqBarGlow}`}
                         style={{ width: `${liqProximityPct}%` }}
@@ -1359,11 +1389,11 @@ export default function DeltaDashboard() {
                       </div>
                     </div>
                     <div className="flex justify-between mt-1.5">
-                      <span className="text-[9px] font-mono text-[#4c9972]/60">Safe</span>
-                      <span className={`text-[10px] font-mono font-semibold ${liqProximityPct > 70 ? "text-[#b95a50]" : liqProximityPct > 40 ? "text-[#c9b59c]" : "text-[#4c9972]"}`}>
+                      <span className="text-[9px] font-mono text-[var(--green)]/60">Safe</span>
+                      <span className={`text-[10px] font-mono font-semibold ${liqProximityPct > 70 ? "text-[var(--red)]" : liqProximityPct > 40 ? "text-[var(--text-accent)]" : "text-[var(--green)]"}`}>
                         {liqProximityPct.toFixed(1)}% risk
                       </span>
-                      <span className="text-[9px] font-mono text-[#b95a50]/60">Liquidation</span>
+                      <span className="text-[9px] font-mono text-[var(--red)]/60">Liquidation</span>
                     </div>
                   </div>
                 </div>
@@ -1375,18 +1405,18 @@ export default function DeltaDashboard() {
               <div className="glass-card-strong rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-[#c9b59c]/15 text-[#9c8970]">
+                    <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-muted)]">
                       <Target className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-semibold text-[#3d352a]">Active Orders — Risk:Reward</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">Active Orders â€” Risk:Reward</span>
                   </div>
-                  <span className="text-xs text-[#b8a088] font-mono">{activeOrders.length} orders</span>
+                  <span className="text-xs text-[var(--text-faint)] font-mono">{activeOrders.length} orders</span>
                 </div>
 
                 <div className="space-y-4">
                   {Object.entries(
                     activeOrders.reduce((acc, ord) => {
-                      const sym = ord.product_symbol || ord.product?.symbol || "—";
+                      const sym = ord.product_symbol || ord.product?.symbol || "â€”";
                       if (!acc[sym]) acc[sym] = [];
                       acc[sym].push(ord);
                       return acc;
@@ -1447,37 +1477,37 @@ export default function DeltaDashboard() {
                     const tpPnl = getEstPnl(tpPrice);
                     const slPnl = getEstPnl(slPrice);
 
-                    let rrRatio = "—";
-                    let rrColor = "text-[#9c8970]";
+                    let rrRatio = "â€”";
+                    let rrColor = "text-[var(--text-muted)]";
                     if (tpPrice > 0 && slPrice > 0 && entryRef > 0) {
                       const reward = Math.abs(tpPrice - entryRef);
                       const risk = Math.abs(entryRef - slPrice);
                       if (risk > 0) {
                         const rr = reward / risk;
                         rrRatio = `1:${rr.toFixed(2)}`;
-                        rrColor = rr >= 2 ? "text-[#4c9972]" : rr >= 1 ? "text-[#c9b59c]" : "text-[#b95a50]";
+                        rrColor = rr >= 2 ? "text-[var(--green)]" : rr >= 1 ? "text-[var(--text-accent)]" : "text-[var(--red)]";
                       }
                     } else if (tpPrice > 0) {
                       rrRatio = "TP Only";
-                      rrColor = "text-[#4c9972]";
+                      rrColor = "text-[var(--green)]";
                     } else if (slPrice > 0) {
                       rrRatio = "SL Only";
-                      rrColor = "text-[#b95a50]";
+                      rrColor = "text-[var(--red)]";
                     }
 
                     return (
                       <div key={`ord-grp-${idx}`} className="glass-card-subtle rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-4 border-b border-[#d9cfc7]/40 pb-3">
+                        <div className="flex items-center justify-between mb-4 border-b border-[var(--divider)]/40 pb-3">
                           <div className="flex items-center gap-2">
                             {posSide && (
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${posSide === "Long" ? "bg-[#4c9972]/10 text-[#4c9972]" : "bg-[#b95a50]/10 text-[#b95a50]"}`}>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${posSide === "Long" ? "bg-[var(--green)]/10 text-[var(--green)]" : "bg-[var(--red)]/10 text-[var(--red)]"}`}>
                                 {posSide}
                               </span>
                             )}
-                            <span className="text-sm font-semibold text-[#3d352a]">{symbol}</span>
+                            <span className="text-sm font-semibold text-[var(--text-primary)]">{symbol}</span>
                           </div>
                           {entryRef > 0 && (
-                            <span className="text-xs text-[#b8a088] font-mono">Avg Entry: ${entryRef.toLocaleString(undefined, {minimumFractionDigits: 1})}</span>
+                            <span className="text-xs text-[var(--text-faint)] font-mono">Avg Entry: ${entryRef.toLocaleString(undefined, {minimumFractionDigits: 1})}</span>
                           )}
                         </div>
 
@@ -1485,43 +1515,43 @@ export default function DeltaDashboard() {
                           <div className="space-y-3 flex-1 w-full">
                             {/* TP Row */}
                             <div className="flex justify-between items-center sm:pr-6">
-                              <span className="text-[11px] text-[#9c8970] font-medium uppercase tracking-wider w-20 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#4c9972]"></span>
+                              <span className="text-[11px] text-[var(--text-muted)] font-medium uppercase tracking-wider w-20 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]"></span>
                                 Target
                               </span>
                               {tpPrice > 0 ? (
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-mono font-bold text-[#4c9972]">${tpPrice.toLocaleString()}</span>
-                                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 bg-[#4c9972]/10 text-[#4c9972] rounded min-w-[70px] text-center border border-[#4c9972]/20">
-                                    {tpPnl !== null ? `+$${tpPnl.toFixed(2)}` : "—"}
+                                  <span className="text-sm font-mono font-bold text-[var(--green)]">${tpPrice.toLocaleString()}</span>
+                                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 bg-[var(--green)]/10 text-[var(--green)] rounded min-w-[70px] text-center border border-[#4c9972]/20">
+                                    {tpPnl !== null ? `+$${tpPnl.toFixed(2)}` : "â€”"}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-xs italic text-[#c9b59c]">—</span>
+                                <span className="text-xs italic text-[var(--text-accent)]">â€”</span>
                               )}
                             </div>
 
                             {/* SL Row */}
                             <div className="flex justify-between items-center sm:pr-6">
-                              <span className="text-[11px] text-[#9c8970] font-medium uppercase tracking-wider w-20 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#b95a50]"></span>
+                              <span className="text-[11px] text-[var(--text-muted)] font-medium uppercase tracking-wider w-20 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--red)]"></span>
                                 Stop
                               </span>
                               {slPrice > 0 ? (
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-mono font-bold text-[#b95a50]">${slPrice.toLocaleString()}</span>
-                                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 bg-[#b95a50]/10 text-[#b95a50] rounded min-w-[70px] text-center border border-[#b95a50]/20">
-                                    {slPnl !== null ? `-$${slPnl.toFixed(2)}` : "—"}
+                                  <span className="text-sm font-mono font-bold text-[var(--red)]">${slPrice.toLocaleString()}</span>
+                                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 bg-[var(--red)]/10 text-[var(--red)] rounded min-w-[70px] text-center border border-[#b95a50]/20">
+                                    {slPnl !== null ? `-$${slPnl.toFixed(2)}` : "â€”"}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-xs italic text-[#c9b59c]">—</span>
+                                <span className="text-xs italic text-[var(--text-accent)]">â€”</span>
                               )}
                             </div>
                           </div>
 
-                          <div className="sm:border-l border-[#d9cfc7]/30 sm:pl-6 pt-3 sm:pt-0 border-t sm:border-t-0 w-full sm:w-auto flex flex-col items-center justify-center min-w-[90px]">
-                            <span className="text-[10px] text-[#9c8970] uppercase font-medium mb-1">R:R Ratio</span>
+                          <div className="sm:border-l border-[var(--divider)]/30 sm:pl-6 pt-3 sm:pt-0 border-t sm:border-t-0 w-full sm:w-auto flex flex-col items-center justify-center min-w-[90px]">
+                            <span className="text-[10px] text-[var(--text-muted)] uppercase font-medium mb-1">R:R Ratio</span>
                             <span className={`text-base font-mono font-bold ${rrColor}`}>{rrRatio}</span>
                           </div>
                         </div>
@@ -1538,44 +1568,44 @@ export default function DeltaDashboard() {
         {historyLoaded && (
           <section className="animate-fade-in-up">
             <div className="glass-card-strong rounded-2xl overflow-hidden shadow-lg">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#d9cfc7]/40">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--divider)]/40">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-[#9c8970]" />
-                  <span className="text-sm font-medium text-[#5c503f]">Past Trades (Last 93 Days)</span>
+                  <History className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Past Trades (Last 93 Days)</span>
                 </div>
-                <span className="text-xs text-[#b8a088] font-mono">{closedTrades.length} trades</span>
+                <span className="text-xs text-[var(--text-faint)] font-mono">{closedTrades.length} trades</span>
               </div>
 
               {closedTrades.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="border-b border-[#d9cfc7]/30">
-                        {["Date", "Asset", "Side", "Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (₹)"].map((h) => (
-                          <th key={h} className={`px-4 py-3 text-[10px] font-medium text-[#9c8970] uppercase tracking-wider whitespace-nowrap ${
-                            ["Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (₹)"].includes(h) ? "text-right" : ""
+                      <tr className="border-b border-[var(--divider)]/30">
+                        {["Date", "Asset", "Side", "Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (â‚¹)"].map((h) => (
+                          <th key={h} className={`px-4 py-3 text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap ${
+                            ["Qty", "Entry", "Exit", "Realised PnL", "Fees", "Net PnL (â‚¹)"].includes(h) ? "text-right" : ""
                           }`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {closedTrades.slice(0, 100).map((t, i) => (
-                        <tr key={`${t.orderId}-${i}`} className="border-b border-[#d9cfc7]/20 hover:bg-[#efe9e3]/50 transition-colors">
-                          <td className="px-4 py-3 text-xs text-[#9c8970] font-mono whitespace-nowrap">{t.date}</td>
-                          <td className="px-4 py-3 text-xs text-[#3d352a] font-semibold">{t.symbol}</td>
+                        <tr key={`${t.orderId}-${i}`} className="border-b border-[var(--divider)]/20 hover:bg-[var(--bg-secondary)]/50 transition-colors">
+                          <td className="px-4 py-3 text-xs text-[var(--text-muted)] font-mono whitespace-nowrap">{t.date}</td>
+                          <td className="px-4 py-3 text-xs text-[var(--text-primary)] font-semibold">{t.symbol}</td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                              t.side === "Buy" || t.side === "Long" ? "bg-[#4c9972]/10 text-[#4c9972]" : "bg-[#b95a50]/10 text-[#b95a50]"
+                              t.side === "Buy" || t.side === "Long" ? "bg-[var(--green)]/10 text-[var(--green)]" : "bg-[var(--red)]/10 text-[var(--red)]"
                             }`}>{t.side}</span>
                           </td>
-                          <td className="px-4 py-3 text-xs text-[#5c503f] text-right font-mono">{t.qty}</td>
-                          <td className="px-4 py-3 text-xs text-[#9c8970] text-right font-mono">${t.entryPrice}</td>
-                          <td className="px-4 py-3 text-xs text-[#5c503f] text-right font-mono">${t.exitPrice}</td>
-                          <td className={`px-4 py-3 text-xs text-right font-mono font-semibold ${t.realisedPnlUsd >= 0 ? "text-[#4c9972]" : "text-[#b95a50]"}`}>
+                          <td className="px-4 py-3 text-xs text-[var(--text-secondary)] text-right font-mono">{t.qty}</td>
+                          <td className="px-4 py-3 text-xs text-[var(--text-muted)] text-right font-mono">${t.entryPrice}</td>
+                          <td className="px-4 py-3 text-xs text-[var(--text-secondary)] text-right font-mono">${t.exitPrice}</td>
+                          <td className={`px-4 py-3 text-xs text-right font-mono font-semibold ${t.realisedPnlUsd >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
                             {t.realisedPnlUsd >= 0 ? "+" : ""}{fmtUsd(t.realisedPnlUsd)}
                           </td>
-                          <td className="px-4 py-3 text-xs text-[#c9b59c] text-right font-mono">{fmtUsd(t.feesUsd)}</td>
-                          <td className={`px-4 py-3 text-xs text-right font-mono font-bold ${t.netPnlInr >= 0 ? "text-[#4c9972]" : "text-[#b95a50]"}`}>
+                          <td className="px-4 py-3 text-xs text-[var(--text-accent)] text-right font-mono">{fmtUsd(t.feesUsd)}</td>
+                          <td className={`px-4 py-3 text-xs text-right font-mono font-bold ${t.netPnlInr >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
                             {t.netPnlInr >= 0 ? "+" : ""}{fmtInr(t.netPnlInr)}
                           </td>
                         </tr>
@@ -1583,14 +1613,14 @@ export default function DeltaDashboard() {
                     </tbody>
                   </table>
                   {closedTrades.length > 100 && (
-                    <div className="px-6 py-3 text-xs text-[#b8a088] text-center border-t border-[#d9cfc7]/30">
+                    <div className="px-6 py-3 text-xs text-[var(--text-faint)] text-center border-t border-[var(--divider)]/30">
                       Showing 100 of {closedTrades.length} trades
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
-                  <p className="text-sm text-[#b8a088]">No closed trades found in the last 93 days.</p>
+                  <p className="text-sm text-[var(--text-faint)]">No closed trades found in the last 93 days.</p>
                 </div>
               )}
             </div>
@@ -1600,28 +1630,28 @@ export default function DeltaDashboard() {
         {/* ---- RAW TERMINAL ---- */}
         <section className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[#d9cfc7]/40">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40">
               <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-[#9c8970]" />
-                <span className="text-xs font-medium text-[#7a6a56]">Raw API Response</span>
+                <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
+                <span className="text-xs font-medium text-[var(--text-secondary)]">Raw API Response</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#b95a50]/50" />
-                <div className="w-3 h-3 rounded-full bg-[#c9b59c]/50" />
-                <div className="w-3 h-3 rounded-full bg-[#4c9972]/50" />
+                <div className="w-3 h-3 rounded-full bg-[var(--red)]/50" />
+                <div className="w-3 h-3 rounded-full bg-[var(--text-accent)]/50" />
+                <div className="w-3 h-3 rounded-full bg-[var(--green)]/50" />
               </div>
             </div>
-            <div className="p-5 max-h-[400px] overflow-auto glass-card-subtle mx-5 mb-5 rounded-xl border border-[#d9cfc7]/20">
+            <div className="p-5 max-h-[400px] overflow-auto glass-card-subtle mx-5 mb-5 rounded-xl border border-[var(--divider)]/20">
               {rawOutput ? (
-                <pre className="text-xs leading-relaxed font-mono whitespace-pre-wrap break-all text-[#5c503f]"
+                <pre className="text-xs leading-relaxed font-mono whitespace-pre-wrap break-all text-[var(--text-secondary)]"
                   dangerouslySetInnerHTML={{ __html: syntaxHighlight(rawOutput) }} />
               ) : (
-                <div className="flex items-center gap-2 text-[#c9b59c] text-sm">
-                  <span className="font-mono text-[#4c9972]/60">$</span>
+                <div className="flex items-center gap-2 text-[var(--text-accent)] text-sm">
+                  <span className="font-mono text-[var(--green)]/60">$</span>
                   <span className="font-mono">
                     {isLoading ? "Fetching API responses..." : "Click 'Test Connection' or a metric card to view raw JSON here."}
                   </span>
-                  {status === "idle" && <span className="w-2 h-4 bg-[#c9b59c]/40 animate-pulse" />}
+                  {status === "idle" && <span className="w-2 h-4 bg-[var(--text-accent)]/40 animate-pulse" />}
                 </div>
               )}
             </div>
@@ -1630,14 +1660,16 @@ export default function DeltaDashboard() {
       </main>
 
       {/* ============ FOOTER ============ */}
-      <footer className="relative z-10 border-t border-[#d9cfc7]/40 py-4">
+      <footer className="relative z-10 border-t border-[var(--divider)]/40 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 justify-center">
-          <AlertTriangle className="w-3.5 h-3.5 text-[#c9b59c]" />
-          <p className="text-xs text-[#9c8970]">
-            Ensure API key is set to <span className="text-[#b8a088] font-medium">{"'View-Only'"}</span> in Delta Settings. Never share your API secret.
+          <AlertTriangle className="w-3.5 h-3.5 text-[var(--text-accent)]" />
+          <p className="text-xs text-[var(--text-muted)]">
+            Ensure API key is set to <span className="text-[var(--text-faint)] font-medium">{"'View-Only'"}</span> in Delta Settings. Never share your API secret.
           </p>
         </div>
       </footer>
     </div>
   );
 }
+
+

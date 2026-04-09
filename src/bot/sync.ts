@@ -77,10 +77,13 @@ async function fetchAllPages(endpoint: string) {
         const q = afterCursor ? `after=${afterCursor}&page_size=100` : `page_size=100`;
         const data = await fetchFromDelta(endpoint, q);
 
-        if (data?.data?.success && Array.isArray(data.data.result)) {
-            const items = data.data.result;
+        // Network error / Rate Limit
+        if (!data) return null;
+
+        if (data.success && Array.isArray(data.result)) {
+            const items = data.result;
             allResults = allResults.concat(items);
-            afterCursor = data.data.meta?.after || null;
+            afterCursor = data.meta?.after || null;
             
             // Check if we've reached data older than 93 days
             if (items.length > 0) {
@@ -92,6 +95,7 @@ async function fetchAllPages(endpoint: string) {
                 }
             }
         } else {
+            console.log(`     -> Pagination ended or invalid response.`);
             break;
         }
         pages++;

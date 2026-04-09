@@ -98,8 +98,8 @@ async function fetchAllPages(endpoint: string) {
         // Safety cap to prevent abusing API
         if (pages > 50) break;
         
-        // Small delay to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Delay to respect strict CloudFront rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
     } while (afterCursor);
 
     return { success: true, result: allResults };

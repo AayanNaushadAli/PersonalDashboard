@@ -33,13 +33,13 @@ async function fetchFromDelta(endpoint: string, qString: string = "") {
 
     const method = "GET";
     const path = endpoint;
-    const queryString = qString;
+    const queryString = qString ? `?${qString}` : "";
     const payload = "";
 
     const { signature, timestamp } = generateSignature(apiSecret, method, path, queryString, payload);
 
     try {
-        const res = await fetch(`${BASE_URL}${path}${queryString ? "?" + queryString : ""}`, {
+        const res = await fetch(`${BASE_URL}${path}${queryString}`, {
             method,
             headers: {
                 "api-key": apiKey,

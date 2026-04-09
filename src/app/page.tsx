@@ -1233,9 +1233,9 @@ export default function DeltaDashboard() {
               <p className="text-[10px] text-[var(--text-faint)] mb-6">Last 93 days performance (weekends marked with a dot)</p>
               
               <div className="overflow-visible pb-2 flex items-center justify-center">
-                <div className="flex gap-[3px] min-w-max">
+                <div className="flex gap-1 min-w-max">
                   {Array.from({ length: Math.ceil(heatmapData.length / 7) }).map((_, colIdx) => (
-                    <div key={`hm-col-${colIdx}`} className="flex flex-col gap-[3px]">
+                    <div key={`hm-col-${colIdx}`} className="flex flex-col gap-1">
                       {heatmapData.slice(colIdx * 7, colIdx * 7 + 7).map((day, rowIdx) => {
                         let bgColor = "bg-[var(--bg-secondary)]"; // Empty/Neutral
                         let hoverBorder = "hover:border-[#c9b59c]";
@@ -1254,10 +1254,17 @@ export default function DeltaDashboard() {
                         return (
                           <div 
                             key={`hm-day-${rowIdx}`}
-                            className={`w-4 h-4 rounded-[2px] ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
+                            className={`w-8 h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
                           >
+                            {/* Inner PnL Number */}
+                            {day.pnl !== 0 && (
+                              <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md">
+                                {Math.abs(day.pnl).toFixed(0)}
+                              </span>
+                            )}
+
                             {/* Weekend indicator dot */}
-                            {day.isWeekend && <div className="absolute top-[2px] right-[2px] w-[2px] h-[2px] rounded-full bg-slate-900/40 pointer-events-none"></div>}
+                            {day.isWeekend && <div className="absolute top-[2px] right-[2px] w-1 h-1 rounded-full bg-black/30 pointer-events-none"></div>}
                             
                             {/* Simple tooltip */}
                             <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity glass-card-strong text-[var(--text-primary)] text-xs py-1.5 px-3 rounded-lg w-max z-[100] pointer-events-none shadow-xl">

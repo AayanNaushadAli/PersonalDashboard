@@ -238,6 +238,15 @@ async function fetchAllPages(
   baseQuery: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any[]> {
+  const useSupabase = process.env.NEXT_PUBLIC_USE_SUPABASE === "true";
+
+  if (useSupabase) {
+    // Supabase currently holds only the latest snapshot, no cursor needed.
+    const q = baseQuery ? `${baseQuery}&page_size=100` : "page_size=100";
+    const data = await callDelta(endpoint, q);
+    return data.data?.success && Array.isArray(data.data.result) ? data.data.result : [];
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let allResults: any[] = [];
   let afterCursor: string | null = null;
@@ -475,8 +484,8 @@ export default function DeltaDashboard() {
           orderId: order.id,
         });
 
-        if (pnl > 0) profit += pnl;
-        else if (pnl < 0) loss += Math.abs(pnl);
+        if (netPnlUsd > 0) profit += netPnlUsd;
+        else if (netPnlUsd < 0) loss += Math.abs(netPnlUsd);
       }
 
       if (trades.length > 0) {
@@ -496,7 +505,7 @@ export default function DeltaDashboard() {
       setTotalProfit(profit);
       setTotalLoss(loss);
       setTotalFees(totalFees);
-      setNetPnl(profit - loss - totalFees);
+      setNetPnl(profit - loss); // since profit and loss already account for fees (Net)
 
       // Equity curve from wallet transactions
       const txns: WalletTransaction[] = await fetchAllPages(

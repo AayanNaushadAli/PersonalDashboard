@@ -1259,7 +1259,7 @@ export default function DeltaDashboard() {
                             {/* Inner PnL Number */}
                             {day.pnl !== 0 && (
                               <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md">
-                                {Math.abs(day.pnl).toFixed(0)}
+                                {day.pnl.toFixed(1).replace(/\.0$/, '')}$
                               </span>
                             )}
 

@@ -480,7 +480,7 @@ export default function PaperTradingPage() {
                                 </span>
                               )}
                               {day.isWeekend && <div className="absolute top-[2px] right-[2px] w-1 h-1 rounded-full bg-black/30 pointer-events-none"></div>}
-                              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity glass-card-strong text-[var(--text-primary)] text-xs py-1.5 px-3 rounded-lg w-max z-[100] pointer-events-none shadow-xl">
+                              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity glass-card-strong !bg-[var(--bg-base)]/90 text-[var(--text-primary)] text-xs py-1.5 px-3 rounded-lg w-max z-[100] pointer-events-none shadow-xl">
                                 <span className="font-semibold block mb-0.5">{day.dateFull}</span>
                                 <span className={day.pnl > 0 ? "text-[var(--green)] font-mono" : day.pnl < 0 ? "text-[var(--red)] font-mono" : "text-[var(--text-muted)] font-mono"}>
                                   {day.pnl !== 0 ? (day.pnl > 0 ? `+$${day.pnl.toFixed(2)}` : `-$${Math.abs(day.pnl).toFixed(2)}`) : "No Trades"}

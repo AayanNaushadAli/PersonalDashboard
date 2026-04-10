@@ -472,11 +472,11 @@ export default function PaperTradingPage() {
                           return (
                             <div
                               key={`pt-day-${rowIdx}`}
-                              className={`w-8 h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
+                              className={`w-[42px] h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
                             >
-                              {day.pnl !== 0 && (
-                                <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md">
-                                  {Math.abs(day.pnl).toFixed(0)}
+                              {bgColor !== "bg-[var(--bg-secondary)]" && (
+                                <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md tracking-tighter">
+                                  {Number(day.pnl.toFixed(1))}$
                                 </span>
                               )}
                               {day.isWeekend && <div className="absolute top-[2px] right-[2px] w-1 h-1 rounded-full bg-black/30 pointer-events-none"></div>}

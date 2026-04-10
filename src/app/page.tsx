@@ -1260,12 +1260,12 @@ export default function DeltaDashboard() {
                         return (
                           <div
                             key={`hm-day-${rowIdx}`}
-                            className={`w-8 h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
+                            className={`w-[42px] h-8 flex items-center justify-center rounded-sm ${bgColor} cursor-default relative group border border-transparent ${hoverBorder} transition-colors`}
                           >
                             {/* Inner PnL Number */}
-                            {day.pnl !== 0 && (
-                              <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md">
-                                {Math.abs(day.pnl).toFixed(0)}
+                            {bgColor !== "bg-[var(--bg-secondary)]" && (
+                              <span className="text-[10px] font-mono font-bold text-white/90 pointer-events-none drop-shadow-md tracking-tighter">
+                                {Number(day.pnl.toFixed(1))}$
                               </span>
                             )}
 

@@ -34,6 +34,7 @@ import {
   Sun,
   Moon,
   Upload,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -833,6 +834,9 @@ export default function DeltaDashboard() {
             </button>
             <Link href="/virtual" className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--text-accent)]/15 px-3 py-1.5 rounded-full border border-[#c9b59c]/30 hover:bg-[var(--text-accent)]/25 transition-colors flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" /> Virtual Trade
+            </Link>
+            <Link href="/paper" className="text-xs font-medium text-[var(--green)] bg-[var(--green)]/15 px-3 py-1.5 rounded-full border border-[#4c9972]/30 hover:bg-[var(--green)]/25 transition-colors flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5" /> Paper Trade
             </Link>
             {status === "idle" && (
               <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border border-[var(--divider)]/50">
@@ -1634,21 +1638,7 @@ export default function DeltaDashboard() {
           </section>
         )}
 
-        {/* ---- PAPER TRADING LINK ---- */}
-        <Link href="/paper" className="block animate-fade-in-up">
-          <div className="glass-card-strong rounded-2xl p-6 shadow-lg flex items-center justify-between group hover:scale-[1.01] transition-all cursor-pointer">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-[var(--text-accent)]/10 group-hover:bg-[var(--text-accent)]/20 transition-colors">
-                <Upload className="w-5 h-5 text-[var(--text-accent)]" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">Paper Trading Analytics</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Upload a TradingView CSV to analyze your paper trades</p>
-              </div>
-            </div>
-            <ArrowUpRight className="w-4 h-4 text-[var(--text-faint)] group-hover:text-[var(--text-accent)] transition-colors" />
-          </div>
-        </Link>
+
 
         {/* ---- RAW TERMINAL ---- */}
         <section className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>

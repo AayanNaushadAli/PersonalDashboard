@@ -435,7 +435,7 @@ export default function PaperTradingPage() {
                     <YAxis tick={{ fontSize: 10, fill: "var(--text-faint)" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${v.toFixed(0)}`} domain={["dataMin - 5", "dataMax + 5"]} />
                     <Tooltip
                       contentStyle={{ backgroundColor: "var(--bg-glass-strong)", borderColor: "var(--divider)", fontSize: "12px", borderRadius: "8px", backdropFilter: "blur(12px)" }}
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, "Balance"]}
+                      formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Balance"]}
                     />
                     <Area type="monotone" dataKey="balance" stroke="var(--green)" strokeWidth={2} fill="url(#paperEquityGrad)" />
                   </AreaChart>

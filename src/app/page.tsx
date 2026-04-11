@@ -29,6 +29,9 @@ import {
   Calculator,
   Sigma,
   Route,
+  BrainCircuit,
+  ShieldAlert,
+  Minus,
   BellRing,
   BellOff,
   Sun,
@@ -358,6 +361,16 @@ export default function DeltaDashboard() {
   const [lastLiveUpdate, setLastLiveUpdate] = useState<Date | null>(null);
   const lastTradeRef = useRef<number | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  
+  // AI Signal State
+  const [aiSignal, setAiSignal] = useState<any>(null);
+  const [signalLoading, setSignalLoading] = useState(false);
+  const [lastSignalUpdate, setLastSignalUpdate] = useState<Date | null>(null);
+
+  // Risk & Drawdown State
+  const [peakEquity, setPeakEquity] = useState(0);
+  const [drawdown, setDrawdown] = useState(0);
+  const [notifiedDrawdown, setNotifiedDrawdown] = useState(false);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
@@ -396,8 +409,10 @@ export default function DeltaDashboard() {
   const runAll = useCallback(async () => {
     setStatus("loading");
     setResults({});
-    setRawOutput("");
     setErrorMessage("");
+
+    // Reset signal on full run if needed or keep cache
+    // setAiSignal(null);
 
     // 1. Basic connectivity endpoints
     const newResults: Record<string, EndpointResult> = {};
@@ -620,6 +635,50 @@ export default function DeltaDashboard() {
     const val = p.unrealized_pnl || p.pnl || p.realized_pnl || "0";
     return acc + parseFloat(val);
   }, 0);
+
+  // --- DRAWDOWN & PEAK EQUITY CALCULATION ---
+  useEffect(() => {
+    if (status !== "success" || balanceUsd <= 0) return;
+
+    const currentEquity = balanceUsd + totalUnrealizedPnl;
+    
+    // Update Peak Equity
+    if (currentEquity > peakEquity) {
+      setPeakEquity(currentEquity);
+      setDrawdown(0);
+      setNotifiedDrawdown(false); // Reset notification for new peak
+    } else if (peakEquity > 0) {
+      const dd = ((currentEquity / peakEquity) - 1) * 100;
+      setDrawdown(dd);
+
+      // Trigger Browser Notification for > 5% Drawdown
+      if (dd <= -5 && !notifiedDrawdown && Notification.permission === "granted") {
+        new Notification("⚠️ CRITICAL DRAWDOWN ALERT", {
+          body: `Your account is down ${Math.abs(dd).toFixed(2)}% from peak equity. Review positions!`,
+          icon: "/favicon.ico"
+        });
+        setNotifiedDrawdown(true);
+      }
+    }
+  }, [balanceUsd, totalUnrealizedPnl, peakEquity, status, notifiedDrawdown]);
+
+  // --- AI SIGNAL FETCHER ---
+  const fetchAiSignal = useCallback(async () => {
+    if (signalLoading) return;
+    setSignalLoading(true);
+    try {
+      const res = await fetch("/api/agent/signal");
+      const data = await res.json();
+      if (data.success) {
+        setAiSignal(data.signal);
+        setLastSignalUpdate(new Date());
+      }
+    } catch (e) {
+      console.error("AI Signal Fetch error:", e);
+    } finally {
+      setSignalLoading(false);
+    }
+  }, [signalLoading]);
 
   const isLoading = status === "loading" || historyLoading;
 
@@ -984,6 +1043,157 @@ export default function DeltaDashboard() {
             </p>
             <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Open Positions</p>
             <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/positions/margined</p>
+          </div>
+        </section>
+
+        {/* ---- RISK & AI MONITORING ---- */}
+        <section className="animate-fade-in-up grid grid-cols-1 md:grid-cols-12 gap-4" style={{ animationDelay: "250ms" }}>
+          {/* AI SIGNAL ROOM (8 cols) */}
+          <div className="md:col-span-8 glass-card rounded-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40 bg-[var(--bg-glass-strong)]">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+                  <BrainCircuit className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-bold tracking-tight text-[var(--text-primary)]">AI Trade Advisor</span>
+              </div>
+              <button 
+                onClick={fetchAiSignal}
+                disabled={signalLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-600/20 active:scale-95 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${signalLoading ? "animate-spin" : ""}`} />
+                {signalLoading ? "Analyzing..." : "Refresh Signal"}
+              </button>
+            </div>
+            
+            <div className="p-5 flex-1 flex flex-col min-h-[220px]">
+              {aiSignal ? (
+                <div className="flex flex-col h-full">
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 ${
+                      aiSignal.action === 'BUY' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 
+                      aiSignal.action === 'SELL' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 
+                      'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                    }`}>
+                      {aiSignal.action === 'BUY' ? <TrendingUp className="w-3.5 h-3.5" /> : 
+                       aiSignal.action === 'SELL' ? <TrendingDown className="w-3.5 h-3.5" /> : 
+                       <Minus className="w-3.5 h-3.5" />}
+                      <span className="text-[11px] font-black uppercase tracking-widest">{aiSignal.action}</span>
+                    </div>
+
+                    <div className="flex-1 max-w-[140px] space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-bold uppercase">
+                        <span>Confidence</span>
+                        <span>{aiSignal.confidence_score}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[var(--divider)]/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-indigo-500 transition-all duration-1000" 
+                          style={{ width: `${aiSignal.confidence_score}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-6">
+                      <div className="text-center">
+                        <p className="text-[9px] font-bold text-[var(--text-faint)] uppercase tracking-tighter">Entry</p>
+                        <p className="text-sm font-mono font-bold text-[var(--text-primary)] tracking-tight">${aiSignal.entry_price || "--"}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] font-bold text-[var(--text-faint)] uppercase tracking-tighter">TP</p>
+                        <p className="text-sm font-mono font-bold text-[var(--green)] tracking-tight">${aiSignal.take_profit_1 || "--"}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] font-bold text-[var(--text-faint)] uppercase tracking-tighter">SL</p>
+                        <p className="text-sm font-mono font-bold text-[var(--red)] tracking-tight">${aiSignal.stop_loss || "--"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-card-subtle p-3 rounded-xl border border-[var(--divider)]/10 text-xs leading-relaxed text-[var(--text-secondary)] italic">
+                    <span className="text-indigo-400/80 font-bold not-italic mr-2 font-mono"># ANALYSIS:</span>
+                    {aiSignal.analysis}
+                  </div>
+                  
+                  {lastSignalUpdate && (
+                    <p className="mt-3 text-[9px] font-mono text-[var(--text-faint)] text-right italic">
+                      AI Sentiment updated at: {lastSignalUpdate.toLocaleTimeString()}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+                  <div className="w-12 h-12 rounded-full border border-dashed border-[var(--divider)] flex items-center justify-center mb-3">
+                    <BrainCircuit className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs font-medium max-w-[200px]">Click 'Refresh Signal' for real-time market sentiment and trade zones.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RISK MONITOR (4 cols) */}
+          <div className="md:col-span-4 glass-card rounded-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40 bg-[var(--bg-glass-strong)]">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg ${drawdown <= -5 ? 'bg-rose-500/20 text-rose-400 animate-pulse' : 'bg-orange-500/20 text-orange-400'}`}>
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-bold tracking-tight text-[var(--text-primary)]">Risk Heatmap</span>
+              </div>
+              <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-tighter ${
+                drawdown <= -5 ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+              }`}>
+                {drawdown <= -5 ? 'High Risk' : 'Healthy'}
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 flex flex-col items-center justify-center">
+              <div className="w-full space-y-5">
+                {/* Visual Gauge */}
+                <div className="relative pt-2">
+                   <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">
+                     <span>Max Drawdown</span>
+                     <span className={drawdown < 0 ? 'text-[var(--red)]' : ''}>{drawdown.toFixed(2)}%</span>
+                   </div>
+                   <div className="h-4 w-full bg-[var(--divider)]/10 rounded-full border border-[var(--divider)]/20 p-0.5">
+                     <div 
+                       className={`h-full rounded-full transition-all duration-1000 ${
+                         drawdown <= -5 ? 'bg-gradient-to-r from-rose-600 to-rose-400' : 
+                         drawdown <= -2 ? 'bg-gradient-to-r from-orange-500 to-orange-300' : 
+                         'bg-gradient-to-r from-emerald-600 to-emerald-400'
+                       }`}
+                       style={{ width: `${Math.min(100, Math.abs(drawdown) * 10)}%` }}
+                     />
+                   </div>
+                   <div className="flex justify-between mt-1 px-0.5">
+                     <span className="text-[8px] font-mono text-[var(--text-faint)]">0%</span>
+                     <span className="text-[8px] font-mono text-rose-400/60">Limit: 10%</span>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="glass-card-subtle p-3 rounded-xl border border-[var(--divider)]/10">
+                      <p className="text-[10px] font-bold text-[var(--text-faint)] uppercase tracking-tight mb-1">Peak Equity</p>
+                      <p className="text-sm font-mono font-bold text-[var(--text-primary)]">{fmtUsd(peakEquity)}</p>
+                   </div>
+                   <div className="glass-card-subtle p-3 rounded-xl border border-[var(--divider)]/10">
+                      <p className="text-[10px] font-bold text-[var(--text-faint)] uppercase tracking-tight mb-1">Current Equity</p>
+                      <p className="text-sm font-mono font-bold text-[var(--text-secondary)]">{fmtUsd(balanceUsd + totalUnrealizedPnl)}</p>
+                   </div>
+                </div>
+
+                {drawdown <= -5 && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 flex items-start gap-3">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-rose-200/80 leading-tight">
+                      Account Heat detected. Drawdown exceeded 5% threshold. Consider cutting position sizes to preserve capital.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 

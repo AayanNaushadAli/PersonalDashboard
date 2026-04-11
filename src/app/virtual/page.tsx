@@ -33,8 +33,11 @@ export default function VirtualTradePage() {
   };
 
   useEffect(() => {
-    const auth = localStorage.getItem("virtual_auth");
-    if (auth === "true") setIsAuthenticated(true);
+    const auth = sessionStorage.getItem("virtual_pin");
+    if (auth) {
+      setPin(auth);
+      setIsAuthenticated(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export default function VirtualTradePage() {
       const data = await res.json();
       if (data.success) {
         setIsAuthenticated(true);
-        localStorage.setItem("virtual_auth", "true");
+        sessionStorage.setItem("virtual_pin", pin);
       } else {
         setError(data.error || "Incorrect PIN");
       }
@@ -72,7 +75,8 @@ export default function VirtualTradePage() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem("virtual_auth");
+    sessionStorage.removeItem("virtual_pin");
+    setPin("");
   };
 
   const handleTrade = async (e: React.FormEvent) => {
@@ -94,7 +98,10 @@ export default function VirtualTradePage() {
 
   const handleReset = async () => {
     if (confirm("Reset virtual database to $100 and clear all trades?")) {
-      await fetch("/api/virtual/reset", { method: "POST" });
+      await fetch("/api/virtual/reset", { 
+        method: "POST",
+        headers: { "x-virtual-pin": pin }
+      });
       await fetchDB();
     }
   };

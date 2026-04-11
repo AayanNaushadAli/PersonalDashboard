@@ -142,8 +142,8 @@ export default function VirtualTradePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <header className="border-b border-slate-800/60 bg-slate-950 p-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+          <div className="flex items-center gap-3 text-center sm:text-left">
              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                <Activity className="w-5 h-5" />
              </div>

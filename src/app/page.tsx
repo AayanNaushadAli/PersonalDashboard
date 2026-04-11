@@ -806,7 +806,7 @@ export default function DeltaDashboard() {
 
       {/* ============ HEADER ============ */}
       <header className="relative z-10 glass-card-strong" style={{ borderBottom: '1px solid var(--divider)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Activity className="w-7 h-7 text-[var(--green)]" />
@@ -822,7 +822,7 @@ export default function DeltaDashboard() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-center sm:justify-end">
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
@@ -866,14 +866,14 @@ export default function DeltaDashboard() {
       <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-7">
 
         {/* ---- REFRESH BUTTON ---- */}
-        <section className="animate-fade-in-up flex items-center justify-between glass-card rounded-2xl p-4">
-          <div className="flex items-center gap-3">
+        <section className="animate-fade-in-up flex flex-col sm:flex-row items-center sm:justify-between gap-4 glass-card rounded-2xl p-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
             <div className={`w-2 h-2 rounded-full ${status === 'success' ? 'bg-[var(--green)] shadow-[0_0_8px_rgba(76,153,114,0.4)]' : 'bg-[var(--bg-tertiary)]'}`} />
             <span className="text-xs font-medium text-[var(--text-muted)]">
               {status === "loading" ? "Syncing data..." : status === "success" ? "Real-time data active" : "Connection idle"}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-end">
             <button
               onClick={() => {
                 if (!autoPoll) {
@@ -1238,8 +1238,8 @@ export default function DeltaDashboard() {
               </div>
               <p className="text-[10px] text-[var(--text-faint)] mb-6">Last 93 days performance (weekends marked with a dot)</p>
 
-              <div className="overflow-visible pb-2 flex items-center justify-center">
-                <div className="flex gap-1 min-w-max">
+              <div className="overflow-x-auto pb-4 pt-4 sm:pt-0 flex sm:justify-center w-full">
+                <div className="flex gap-1 min-w-max px-2">
                   {Array.from({ length: Math.ceil(heatmapData.length / 7) }).map((_, colIdx) => (
                     <div key={`hm-col-${colIdx}`} className="flex flex-col gap-1">
                       {heatmapData.slice(colIdx * 7, colIdx * 7 + 7).map((day, rowIdx) => {
@@ -1643,8 +1643,8 @@ export default function DeltaDashboard() {
         {/* ---- RAW TERMINAL ---- */}
         <section className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40 gap-3 sm:gap-0">
+              <div className="flex items-center gap-2 w-full justify-center sm:justify-start">
                 <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
                 <span className="text-xs font-medium text-[var(--text-secondary)]">Raw API Response</span>
               </div>

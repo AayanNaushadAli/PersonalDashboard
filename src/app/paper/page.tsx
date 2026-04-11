@@ -259,8 +259,8 @@ export default function PaperTradingPage() {
 
       {/* ============ HEADER ============ */}
       <header className="relative z-10 glass-card border-b border-[var(--divider)]/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4">
             <Link href="/" className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               <ArrowLeft className="w-4 h-4" />
               <span className="text-xs font-medium">Dashboard</span>
@@ -451,8 +451,8 @@ export default function PaperTradingPage() {
                   <span className="text-sm font-medium text-[var(--text-secondary)]">Daily PnL Heatmap</span>
                 </div>
                 <p className="text-[10px] text-[var(--text-faint)] mb-6">Performance across {heatmap.length} days</p>
-                <div className="overflow-visible pb-2 flex items-center justify-center">
-                  <div className="flex gap-1 min-w-max">
+                <div className="overflow-x-auto pb-4 pt-4 sm:pt-0 flex sm:justify-center w-full">
+                  <div className="flex gap-1 min-w-max px-2">
                     {Array.from({ length: Math.ceil(heatmap.length / 7) }).map((_, colIdx) => (
                       <div key={`pt-col-${colIdx}`} className="flex flex-col gap-1">
                         {heatmap.slice(colIdx * 7, colIdx * 7 + 7).map((day, rowIdx) => {
@@ -498,8 +498,8 @@ export default function PaperTradingPage() {
 
             {/* ---- TRADE LOG TABLE ---- */}
             <div className="glass-card rounded-2xl overflow-hidden shadow-lg">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--divider)]/30">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-b border-[var(--divider)]/30 gap-3 sm:gap-0">
+                <div className="flex items-center gap-2 w-full justify-center sm:justify-start">
                   <FileText className="w-4 h-4 text-[var(--text-muted)]" />
                   <span className="text-sm font-medium text-[var(--text-secondary)]">Trade Log</span>
                   <span className="text-xs text-[var(--text-faint)] font-mono">{trades.length} trades</span>

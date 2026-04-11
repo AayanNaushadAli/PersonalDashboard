@@ -1640,36 +1640,7 @@ export default function DeltaDashboard() {
 
 
 
-        {/* ---- RAW TERMINAL ---- */}
-        <section className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex flex-col sm:flex-row items-center justify-between px-5 py-3 border-b border-[var(--divider)]/40 gap-3 sm:gap-0">
-              <div className="flex items-center gap-2 w-full justify-center sm:justify-start">
-                <Terminal className="w-4 h-4 text-[var(--text-muted)]" />
-                <span className="text-xs font-medium text-[var(--text-secondary)]">Raw API Response</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-[var(--red)]/50" />
-                <div className="w-3 h-3 rounded-full bg-[var(--text-accent)]/50" />
-                <div className="w-3 h-3 rounded-full bg-[var(--green)]/50" />
-              </div>
-            </div>
-            <div className="p-5 max-h-[400px] overflow-auto glass-card-subtle mx-5 mb-5 rounded-xl border border-[var(--divider)]/20">
-              {rawOutput ? (
-                <pre className="text-xs leading-relaxed font-mono whitespace-pre-wrap break-all text-[var(--text-secondary)]"
-                  dangerouslySetInnerHTML={{ __html: syntaxHighlight(rawOutput) }} />
-              ) : (
-                <div className="flex items-center gap-2 text-[var(--text-accent)] text-sm">
-                  <span className="font-mono text-[var(--green)]/60">$</span>
-                  <span className="font-mono">
-                    {isLoading ? "Fetching API responses..." : "Click 'Test Connection' or a metric card to view raw JSON here."}
-                  </span>
-                  {status === "idle" && <span className="w-2 h-4 bg-[var(--text-accent)]/40 animate-pulse" />}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+
       </main>
 
       {/* ============ FOOTER ============ */}

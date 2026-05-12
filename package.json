@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "bot": "tsx src/bot/main.ts",
-    "sync": "tsx src/bot/sync.ts"
+    "sync": "tsx src/bot/sync.ts",
+    "binance-sync": "tsx src/bot/binance-sync.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",

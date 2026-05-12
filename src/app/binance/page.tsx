@@ -82,6 +82,7 @@ interface ApiResponse {
 
 interface OrderRecord {
   id: number;
+  orderId?: number;
   size: number;
   unfilled_size: number;
   side: string;
@@ -91,6 +92,13 @@ interface OrderRecord {
   paid_commission: string;
   commission: string;
   state: string;
+  status?: string;
+  symbol?: string;
+  executedQty?: string;
+  avgPrice?: string;
+  price?: string;
+  time?: number;
+  updateTime?: number;
   created_at: string;
   updated_at: string;
   product_id: number;
@@ -192,7 +200,7 @@ function ChartTooltip({ active, payload, label }: any) {
 /* Helper: call the API proxy                                          */
 /* ------------------------------------------------------------------ */
 
-async function callDelta(
+async function callBinance(
   endpoint: string,
   queryParams?: string
 ): Promise<ApiResponse> {
@@ -201,7 +209,7 @@ async function callDelta(
   if (useSupabase) {
     try {
       const { data, error } = await supabase
-        .from("delta_sync")
+        .from("binance_sync")
         .select("data, updated_at")
         .eq("endpoint", endpoint)
         .single();
@@ -228,7 +236,7 @@ async function callDelta(
     }
   }
 
-  const res = await fetch("/api/delta", {
+  const res = await fetch("/api/binance", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ endpoint, queryParams }),
@@ -250,7 +258,7 @@ async function fetchAllPages(
   if (useSupabase) {
     // Supabase currently holds only the latest snapshot, no cursor needed.
     const q = baseQuery ? `${baseQuery}&page_size=100` : "page_size=100";
-    const data = await callDelta(endpoint, q);
+    const data = await callBinance(endpoint, q);
     return data.data?.success && Array.isArray(data.data.result) ? data.data.result : [];
   }
 
@@ -264,7 +272,7 @@ async function fetchAllPages(
       .filter(Boolean)
       .join("&");
     const q = parts ? `${parts}` : "page_size=100";
-    const data = await callDelta(endpoint, q);
+    const data = await callBinance(endpoint, q);
 
     if (data.data?.success && Array.isArray(data.data.result)) {
       allResults = allResults.concat(data.data.result);
@@ -285,7 +293,7 @@ async function fetchAllPages(
 function parseDeltaTimestamp(ts: string): Date {
   if (!ts) return new Date(0);
 
-  // Delta API returns microsecond timestamps as strings e.g. "1725865012000000"
+  // Binance Futures returns microsecond timestamps as strings e.g. "1725865012000000"
   const num = Number(ts);
 
   if (!isNaN(num)) {
@@ -340,7 +348,7 @@ function fmtInr(v: number): string {
 /* Main Component                                                      */
 /* ------------------------------------------------------------------ */
 
-export default function DeltaDashboard() {
+export default function BinanceDashboard() {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [results, setResults] = useState<Record<string, EndpointResult>>({});
   const [rawOutput, setRawOutput] = useState("");
@@ -396,7 +404,7 @@ export default function DeltaDashboard() {
 
   const fetchLivePositions = useCallback(async () => {
     try {
-      const resp = await callDelta("/v2/positions/margined", "");
+      const resp = await callBinance("/fapi/v3/positionRisk", "");
       if (resp.data?.success && Array.isArray(resp.data.result)) {
         setLivePositions(resp.data.result);
         setLastLiveUpdate(new Date());
@@ -418,9 +426,9 @@ export default function DeltaDashboard() {
     const newResults: Record<string, EndpointResult> = {};
     let hasError = false;
 
-    for (const ep of ["/v2/wallet/balances", "/v2/orders", "/v2/positions/margined"]) {
+    for (const ep of ["/fapi/v3/balance", "/fapi/v1/openOrders", "/fapi/v3/positionRisk"]) {
       try {
-        const data = await callDelta(ep);
+        const data = await callBinance(ep);
         newResults[ep] = { endpoint: ep, status: data.status || 200, data: data.data };
         if (!data.success || !data.data?.success) {
           hasError = true;
@@ -438,13 +446,13 @@ export default function DeltaDashboard() {
     setStatus(hasError ? "error" : "success");
 
     // Sync live stats from main refresh
-    if (newResults["/v2/positions/margined"]?.data?.success) {
-      setLivePositions(newResults["/v2/positions/margined"].data.result);
+    if (newResults["/fapi/v3/positionRisk"]?.data?.success) {
+      setLivePositions(newResults["/fapi/v3/positionRisk"].data.result);
       setLastLiveUpdate(new Date());
     }
 
-    if (newResults["/v2/wallet/balances"]) {
-      setRawOutput(JSON.stringify(newResults["/v2/wallet/balances"], null, 2));
+    if (newResults["/fapi/v3/balance"]) {
+      setRawOutput(JSON.stringify(newResults["/fapi/v3/balance"], null, 2));
     }
 
     // 2. Fetch history
@@ -467,10 +475,10 @@ export default function DeltaDashboard() {
       const cutoffDate = now - d93;
       const startTime = Math.floor(cutoffDate / 1000);
 
-      // Fetch order history WITHOUT start_time â€” Delta API's start_time
+      // Fetch order history WITHOUT start_time â€” Binance Futures's start_time
       // silently excludes some products (e.g. PAXGUSD). We filter client-side.
       const allOrders: OrderRecord[] = await fetchAllPages(
-        "/v2/orders/history", ""
+        "/fapi/v1/allOrders", ""
       );
 
       // Process closed orders
@@ -478,16 +486,16 @@ export default function DeltaDashboard() {
       let profit = 0, loss = 0, totalFees = 0;
 
       for (const order of allOrders) {
-        if (order.state !== "closed") continue;
+        if (order.status !== "FILLED" && order.state !== "closed") continue;
 
         // Client-side 93-day filter
-        const orderDate = new Date(order.updated_at || order.created_at).getTime();
+        const orderDate = order.updateTime || order.time || new Date(order.updated_at || order.created_at).getTime();
         if (orderDate < cutoffDate) continue;
 
-        const filledQty = order.size - (order.unfilled_size || 0);
+        const filledQty = parseFloat(order.executedQty || "0") || (order.size - (order.unfilled_size || 0));
         if (filledQty <= 0) continue;
 
-        const comm = parseFloat(order.paid_commission || "0");
+        const comm = parseFloat(order.commission || order.paid_commission || "0");
 
         // Sum ALL fees from every closed+filled order (entries + exits)
         totalFees += comm;
@@ -498,7 +506,7 @@ export default function DeltaDashboard() {
 
         // Entry price from meta_data.entry_price, exit from average_fill_price
         const entryPriceRaw = order.meta_data?.entry_price;
-        const exitPriceRaw = order.average_fill_price || order.limit_price;
+        const exitPriceRaw = order.avgPrice || order.average_fill_price || order.price;
 
         const entryStr = entryPriceRaw
           ? parseFloat(entryPriceRaw).toLocaleString("en-US", { maximumFractionDigits: 2 })
@@ -512,15 +520,15 @@ export default function DeltaDashboard() {
         // Use updated_at (fill time) instead of created_at (order placement time)
         trades.push({
           date: formatDate(order.updated_at || order.created_at),
-          symbol: order.product_symbol,
-          side: order.side === "buy" ? "Buy" : "Sell",
+          symbol: order.symbol || order.product_symbol,
+          side: (order.side || "").toUpperCase() === "BUY" ? "Buy" : "Sell",
           qty: filledQty,
           entryPrice: entryStr,
           exitPrice: exitStr,
           realisedPnlUsd: pnl,
           feesUsd: comm,
           netPnlInr: netPnlUsd * USD_TO_INR,
-          orderId: order.id,
+          orderId: order.orderId || order.id,
         });
 
         if (netPnlUsd > 0) profit += netPnlUsd;
@@ -532,7 +540,7 @@ export default function DeltaDashboard() {
         // Check for new trades sequentially
         if (lastTradeRef.current && lastTradeRef.current !== latestTrade.orderId) {
           if (Notification.permission === "granted") {
-            new Notification("Delta Exchange - Trade Filled", {
+            new Notification("Binance - Trade Filled", {
               body: `${latestTrade.side} ${latestTrade.symbol} | Net PnL: ${latestTrade.realisedPnlUsd >= 0 ? '+' : ''}$${latestTrade.realisedPnlUsd.toFixed(2)}`,
             });
           }
@@ -548,7 +556,7 @@ export default function DeltaDashboard() {
 
       // Equity curve from wallet transactions
       const txns: WalletTransaction[] = await fetchAllPages(
-        "/v2/wallet/transactions", `start_time=${startTime}`
+        "/fapi/v1/income", `start_time=${startTime}`
       );
 
       if (txns.length > 0) {
@@ -609,15 +617,14 @@ export default function DeltaDashboard() {
   /* Derived Data                                                      */
   /* ---------------------------------------------------------------- */
 
-  const walletData = results["/v2/wallet/balances"]?.data;
-  const ordersData = results["/v2/orders"]?.data;
-  const positionsData = results["/v2/positions/margined"]?.data;
+  const walletData = results["/fapi/v3/balance"]?.data;
+  const ordersData = results["/fapi/v1/openOrders"]?.data;
+  const positionsData = results["/fapi/v3/positionRisk"]?.data;
 
   let balanceUsd = 0;
   if (walletData?.success && Array.isArray(walletData?.result)) {
-    balanceUsd = walletData.result.reduce(
-      (s: number, w: { balance: string }) => s + parseFloat(w.balance || "0"), 0
-    );
+    const usdtAsset = walletData.result.find((w: any) => w.asset === 'USDT');
+    balanceUsd = usdtAsset ? parseFloat(usdtAsset.balance || '0') : walletData.result.reduce((s: number, w: any) => s + parseFloat(w.balance || '0'), 0);
   }
   const balanceInr = balanceUsd * USD_TO_INR;
 
@@ -628,11 +635,11 @@ export default function DeltaDashboard() {
     ? livePositions
     : (positionsData?.success && Array.isArray(positionsData?.result) ? positionsData.result : []);
 
-  const openPosCount = positionsList.filter((p: { size: number }) => p.size !== 0).length;
+  const openPosCount = positionsList.filter((p: any) => parseFloat(p.positionAmt || p.size || "0") !== 0).length;
 
   const totalUnrealizedPnl = positionsList.reduce((acc: number, p: any) => {
     // For OPEN positions, unrealized_pnl is the floating profit/loss
-    const val = p.unrealized_pnl || p.pnl || p.realized_pnl || "0";
+    const val = p.unRealizedProfit || p.unrealized_pnl || p.pnl || "0";
     return acc + parseFloat(val);
   }, 0);
 
@@ -687,7 +694,7 @@ export default function DeltaDashboard() {
   /* ---------------------------------------------------------------- */
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const openPositions: any[] = positionsList.filter((p: { size: number }) => p.size !== 0);
+  const openPositions: any[] = positionsList.filter((p: any) => parseFloat(p.positionAmt || p.size || "0") !== 0);
 
   const activeOrders: any[] = ordersData?.success && Array.isArray(ordersData?.result)
     ? ordersData.result
@@ -702,8 +709,8 @@ export default function DeltaDashboard() {
     let allocated = 0;
     if (openPositions && Array.isArray(openPositions)) {
       openPositions.forEach(p => {
-        const margin = parseFloat(p.margin || "0");
-        const sym = p.product_symbol || p.product?.symbol || "Unknown";
+        const margin = parseFloat(p.isolatedMargin || p.margin || "0");
+        const sym = p.symbol || p.product_symbol || "Unknown";
         const existing = dist.find(d => d.name === sym);
         if (existing) {
           existing.value += margin;
@@ -877,7 +884,7 @@ export default function DeltaDashboard() {
               )}
             </div>
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight font-[Inter]" style={{ color: 'var(--text-primary)' }}>
-              Delta API<span style={{ color: 'var(--text-muted)' }} className="font-normal"> : Connectivity Status</span>
+              Binance Futures<span style={{ color: 'var(--text-muted)' }} className="font-normal"> : Dashboard</span>
             </h1>
           </div>
 
@@ -892,7 +899,7 @@ export default function DeltaDashboard() {
               {darkMode ? <Sun className="w-4 h-4" style={{ color: 'var(--text-accent)' }} /> : <Moon className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
             </button>
             <Link href="/binance" className="text-xs font-medium text-amber-500 bg-amber-500/15 px-3 py-1.5 rounded-full border border-amber-500/30 hover:bg-amber-500/25 transition-colors flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5" /> Binance
+              <Zap className="w-3.5 h-3.5" /> Binance
             </Link>
             <Link href="/virtual" className="text-xs font-medium text-[var(--text-secondary)] bg-[var(--text-accent)]/15 px-3 py-1.5 rounded-full border border-[#c9b59c]/30 hover:bg-[var(--text-accent)]/25 transition-colors flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" /> Virtual Trade
@@ -972,7 +979,7 @@ export default function DeltaDashboard() {
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Total Balance â€” dual currency */}
           <div className="animate-fade-in-up glass-card-strong rounded-2xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
-            onClick={() => results["/v2/wallet/balances"] && setRawOutput(JSON.stringify(results["/v2/wallet/balances"], null, 2))}>
+            onClick={() => results["/fapi/v3/balance"] && setRawOutput(JSON.stringify(results["/fapi/v3/balance"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
               <div className="p-2.5 rounded-xl bg-[var(--green)]/10 text-[var(--green)]"><Wallet className="w-5 h-5" /></div>
               {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
@@ -984,7 +991,7 @@ export default function DeltaDashboard() {
               {status !== "idle" ? fmtInr(balanceInr) : ""}
             </p>
             <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Total Balance</p>
-            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/wallet/balances</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /fapi/v3/balance</p>
           </div>
 
           {/* Live Unrealized PnL */}
@@ -1009,7 +1016,7 @@ export default function DeltaDashboard() {
             </p>
             <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Live Unrealized PnL</p>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] font-mono text-[var(--text-accent)]">GET /v2/positions/margined</p>
+              <p className="text-[10px] font-mono text-[var(--text-accent)]">GET /fapi/v3/positionRisk</p>
               {lastLiveUpdate && (
                 <p className="text-[9px] font-mono text-[var(--text-faint)] italic">
                   Updated: {lastLiveUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -1021,7 +1028,7 @@ export default function DeltaDashboard() {
           {/* Active Orders */}
           <div className="animate-fade-in-up glass-card-strong rounded-2xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
             style={{ animationDelay: "100ms" }}
-            onClick={() => results["/v2/orders"] && setRawOutput(JSON.stringify(results["/v2/orders"], null, 2))}>
+            onClick={() => results["/fapi/v1/openOrders"] && setRawOutput(JSON.stringify(results["/fapi/v1/openOrders"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
               <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-muted)]"><ShoppingCart className="w-5 h-5" /></div>
               {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
@@ -1030,13 +1037,13 @@ export default function DeltaDashboard() {
               {status !== "idle" ? activeOrdersCount : "â€”"}
             </p>
             <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Active Orders</p>
-            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/orders</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /fapi/v1/openOrders</p>
           </div>
 
           {/* Open Positions */}
           <div className="animate-fade-in-up glass-card-strong rounded-2xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-300 hover:shadow-lg"
             style={{ animationDelay: "200ms" }}
-            onClick={() => results["/v2/positions/margined"] && setRawOutput(JSON.stringify(results["/v2/positions/margined"], null, 2))}>
+            onClick={() => results["/fapi/v3/positionRisk"] && setRawOutput(JSON.stringify(results["/fapi/v3/positionRisk"], null, 2))}>
             <div className="flex items-center justify-between mb-4">
               <div className="p-2.5 rounded-xl bg-[var(--text-accent)]/15 text-[var(--text-faint)]"><BarChart3 className="w-5 h-5" /></div>
               {status === "success" && <CheckCircle2 className="w-4 h-4 text-[var(--green)]" />}
@@ -1045,7 +1052,7 @@ export default function DeltaDashboard() {
               {status !== "idle" ? openPosCount : "â€”"}
             </p>
             <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider mt-2">Open Positions</p>
-            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /v2/positions/margined</p>
+            <p className="mt-1 text-[10px] font-mono text-[var(--text-accent)]">GET /fapi/v3/positionRisk</p>
           </div>
         </section>
 
@@ -1514,14 +1521,14 @@ export default function DeltaDashboard() {
 
             {/* --- Open Positions Risk --- */}
             {openPositions.map((pos, idx) => {
-              const entryPrice = parseFloat(pos.entry_price || "0");
-              const markPrice = parseFloat(pos.mark_price || pos.entry_price || "0");
-              const liqPrice = parseFloat(pos.liquidation_price || "0");
+              const entryPrice = parseFloat(pos.entryPrice || pos.entry_price || "0");
+              const markPrice = parseFloat(pos.markPrice || pos.mark_price || "0");
+              const liqPrice = parseFloat(pos.liquidationPrice || pos.liquidation_price || "0");
               const leverage = parseFloat(pos.leverage || "0");
-              const posSize = Math.abs(pos.size || 0);
-              const posSide = pos.size > 0 ? "Long" : "Short";
+              const posSize = Math.abs(parseFloat(pos.positionAmt || pos.size || "0"));
+              const posSide = parseFloat(pos.positionAmt || pos.size || "0") > 0 ? "Long" : "Short";
               const symbol = pos.product_symbol || pos.product?.symbol || "â€”";
-              const unrealisedPnl = parseFloat(pos.realized_pnl || pos.pnl || "0");
+              const unrealisedPnl = parseFloat(pos.unRealizedProfit || pos.unrealized_pnl || "0");
               const margin = parseFloat(pos.margin || "0");
 
               // Notional value (contracts * 1 USD per contract for inverse perpetuals)

@@ -221,21 +221,19 @@ export default function PaperTradingPage() {
       pnlByDay[key] = (pnlByDay[key] || 0) + t.pnl;
     });
 
-    const dates = trades.map(t => new Date(t.time));
-    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
-
+    // Always show last 90 days from today
     const days = [];
-    const current = new Date(minDate);
-    while (current <= maxDate) {
-      const key = current.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+    const today = new Date();
+    for (let i = 89; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
       days.push({
         dateFull: key,
-        dateShort: current.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        dateShort: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
         pnl: pnlByDay[key] || 0,
-        isWeekend: current.getDay() === 0 || current.getDay() === 6
+        isWeekend: d.getDay() === 0 || d.getDay() === 6
       });
-      current.setDate(current.getDate() + 1);
     }
     return days;
   }, [trades]);
@@ -450,7 +448,7 @@ export default function PaperTradingPage() {
                   <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
                   <span className="text-sm font-medium text-[var(--text-secondary)]">Daily PnL Heatmap</span>
                 </div>
-                <p className="text-[10px] text-[var(--text-faint)] mb-6">Performance across {heatmap.length} days</p>
+                <p className="text-[10px] text-[var(--text-faint)] mb-6">Last 90 days performance</p>
                 <div className="overflow-x-auto pb-4 pt-4 sm:pt-0 flex sm:justify-center w-full">
                   <div className="flex gap-1 min-w-max px-2">
                     {Array.from({ length: Math.ceil(heatmap.length / 7) }).map((_, colIdx) => (
